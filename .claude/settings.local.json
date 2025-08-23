@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cat:*)",
+      "Bash(git checkout:*)",
+      "Bash(git init:*)",
+      "Bash(echo \"🔁 Arrow function''''ları kontrol edelim:\" grep -rn \"export const.*=\" src --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(pkill:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(npm config set:*)",
+      "Bash(test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
