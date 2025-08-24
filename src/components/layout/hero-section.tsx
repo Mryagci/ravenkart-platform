@@ -39,14 +39,36 @@ const HeroSection = () => {
     }
   }
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+    <section style={{
+      position: 'relative',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      paddingTop: '4rem'
+    }}>
       {/* Animated gradient background */}
-      <div className="absolute inset-0 gradient-bg opacity-90" />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(135deg, #334155 0%, #7c3aed 15%, #ec4899 35%, #3730a3 55%, #be185d 75%, #1e293b 100%)',
+        opacity: 0.9
+      }} />
       
       {/* Floating elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div style={{position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none'}}>
         <motion.div
-          className="absolute top-1/4 left-1/4 w-32 h-32 bg-teal-400/25 rounded-full blur-xl"
+          style={{
+            position: 'absolute',
+            top: '25%',
+            left: '25%',
+            width: '8rem',
+            height: '8rem',
+            background: 'rgba(20,184,166,0.25)',
+            borderRadius: '50%',
+            filter: 'blur(40px)'
+          }}
           animate={{
             y: [0, -30, 15, 0],
             x: [0, 20, -10, 0],
@@ -104,30 +126,57 @@ const HeroSection = () => {
         />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 text-center text-white">
+      <div style={{
+        position: 'relative',
+        zIndex: 10,
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 1rem',
+        textAlign: 'center',
+        color: 'white'
+      }}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-4xl mx-auto"
+          style={{maxWidth: '64rem', margin: '0 auto'}}
         >
           {/* Main heading */}
           <motion.h1 
-            className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
+            style={{
+              fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
+              fontWeight: 'bold',
+              marginBottom: '1.5rem',
+              background: 'linear-gradient(to right, white, #d1d5db)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              lineHeight: '1.1'
+            }}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             RAVENKART
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-yellow-300 to-orange-300">
+            <span style={{
+              background: 'linear-gradient(to right, #67e8f9, #fde047, #fdba74)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
               Dijital Kimlik Platformu
             </span>
           </motion.h1>
 
           {/* Subtitle */}
           <motion.p 
-            className="text-xl md:text-2xl mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed"
+            style={{
+              fontSize: 'clamp(1.125rem, 3vw, 1.5rem)',
+              marginBottom: '2rem',
+              color: '#e5e7eb',
+              maxWidth: '42rem',
+              margin: '0 auto 2rem',
+              lineHeight: '1.6'
+            }}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -138,7 +187,15 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <motion.div 
-            className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: '4rem'
+            }}
+            className="sm:flex-row"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}

@@ -1,0 +1,982 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Camera, QrCode, Upload, X, CheckCircle, AlertCircle, Scan, Edit3, Save, Crop, MapPin, Calendar, StickyNote } from 'lucide-react'
+import Navbar from '@/components/layout/navbar'
+// import ReactCrop, { type Crop } from 'react-image-crop'
+// import 'react-image-crop/dist/ReactCrop.css'
+
+interface ScannedCard {
+  id: string
+  name: string
+  title?: string
+  company?: string
+  email?: string
+  phone?: string
+  website?: string
+  scannedAt: Date
+  imageData?: string
+  isEditing?: boolean
+  location?: string
+  notes?: string
+  croppedImageData?: string
+}
+
+export default function CardScannerPage() {
+  const [scanMode, setScanMode] = useState<'qr' | 'camera' | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
+  const [scannedCards, setScannedCards] = useState<ScannedCard[]>([])
+  const [scanResult, setScanResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [editingCard, setEditingCard] = useState<ScannedCard | null>(null)
+  const [cropMode, setCropMode] = useState(false)
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 })
+  const [userLocation, setUserLocation] = useState<string>('')
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const cropCanvasRef = useRef<HTMLCanvasElement>(null)
+  const cropImageRef = useRef<HTMLImageElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [])
+
+  const startCamera = async () => {
+    try {
+      setError(null)
+      setIsScanning(true)
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      })
+      
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play()
+      }
+    } catch (err) {
+      setError('Kameraya erişim izni gerekli')
+      setIsScanning(false)
+    }
+  }
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    setIsScanning(false)
+    setScanMode(null)
+  }
+
+  const captureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current
+      const video = videoRef.current
+      const context = canvas.getContext('2d')
+      
+      if (context) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        context.drawImage(video, 0, 0)
+        
+        const imageData = canvas.toDataURL('image/jpeg')
+        
+        // Show processing message
+        setScanResult('Kartvizit işleniyor, lütfen bekleyin...')
+        
+        // Extract text from captured image
+        extractTextFromImage(imageData).then((extractedData) => {
+          const newCard: ScannedCard = {
+            id: Date.now().toString(),
+            name: extractedData.name || 'Bilinmeyen',
+            title: extractedData.title,
+            company: extractedData.company,
+            email: extractedData.email,
+            phone: extractedData.phone,
+            website: extractedData.website,
+            scannedAt: new Date(),
+            imageData: imageData,
+            location: '', // Empty for manual input
+            notes: ''
+          }
+          
+          setScannedCards(prev => [newCard, ...prev])
+          setScanResult('Kartvizit başarıyla tarandı ve metin algılandı!')
+          stopCamera()
+          
+          setTimeout(() => setScanResult(null), 3000)
+        }).catch(() => {
+          // Fallback if OCR fails
+          const fallbackCard: ScannedCard = {
+            id: Date.now().toString(),
+            name: 'Manuel Giriş Gerekli',
+            scannedAt: new Date(),
+            imageData: imageData,
+            location: '',
+            notes: ''
+          }
+          
+          setScannedCards(prev => [fallbackCard, ...prev])
+          setScanResult('Kartvizit tarandı, bilgileri manuel olarak düzenleyebilirsiniz.')
+          stopCamera()
+          
+          setTimeout(() => setScanResult(null), 3000)
+        })
+      }
+    }
+  }
+
+  const editCard = (card: ScannedCard) => {
+    setEditingCard(card)
+  }
+
+  const saveEditedCard = (editedCard: ScannedCard) => {
+    setScannedCards(prev => 
+      prev.map(card => 
+        card.id === editedCard.id ? editedCard : card
+      )
+    )
+    setEditingCard(null)
+    setCropMode(false)
+    setScanResult('Kartvizit başarıyla güncellendi!')
+    setTimeout(() => setScanResult(null), 3000)
+  }
+
+  const saveToCollection = async (card: ScannedCard) => {
+    try {
+      setScanResult('Kartvizit kaydediliyor...')
+      
+      // Get current user from Supabase
+      const { createClient } = await import("@supabase/supabase-js")
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        throw new Error('Kullanıcı oturumu bulunamadı')
+      }
+      
+      // Prepare card data for database
+      const cardData = {
+        user_id: user.id,
+        name: card.name,
+        title: card.title,
+        company: card.company,
+        email: card.email,
+        phone: card.phone,
+        website: card.website,
+        image_data: card.croppedImageData || card.imageData,
+        location: card.location,
+        notes: card.notes,
+        scanned_at: card.scannedAt.toISOString(),
+        created_at: new Date().toISOString()
+      }
+      
+      // Insert into scanned_cards table
+      const { error } = await supabase
+        .from('scanned_cards')
+        .insert([cardData])
+      
+      if (error) {
+        console.error('Database error:', error)
+        throw new Error('Veritabanına kaydetme hatası: ' + error.message)
+      }
+      
+      setScanResult('Kartvizit başarıyla kaydedildi!')
+      
+      // Remove from temporary state after successful save
+      setScannedCards(prev => prev.filter(c => c.id !== card.id))
+      
+    } catch (error: any) {
+      console.error('Save error:', error)
+      setScanResult('Kaydetme hatası: ' + (error.message || 'Bilinmeyen hata'))
+    }
+    
+    setTimeout(() => setScanResult(null), 3000)
+  }
+
+  const extractTextFromImage = async (imageData: string): Promise<Partial<ScannedCard>> => {
+    // Simulate OCR text extraction - in real app would use Tesseract.js or similar
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock extracted data - in real implementation this would be actual OCR
+        const mockExtractedData = {
+          name: 'Ahmet Yılmaz',
+          title: 'Yazılım Geliştirici',
+          company: 'TechCorp Türkiye',
+          email: 'ahmet.yilmaz@techcorp.com.tr',
+          phone: '+90 532 123 45 67',
+          website: 'www.techcorp.com.tr'
+        }
+        resolve(mockExtractedData)
+      }, 2000) // Simulate processing time
+    })
+  }
+
+  const applyCrop = () => {
+    if (!editingCard?.imageData || !cropCanvasRef.current) return
+
+    const canvas = cropCanvasRef.current
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+
+    img.onload = () => {
+      // Calculate actual image dimensions vs display dimensions
+      const displayImg = cropImageRef.current
+      if (!displayImg) return
+
+      const scaleX = img.naturalWidth / displayImg.clientWidth
+      const scaleY = img.naturalHeight / displayImg.clientHeight
+
+      // Set canvas size to crop area (scaled to actual image size)
+      const actualCropWidth = cropArea.width * scaleX
+      const actualCropHeight = cropArea.height * scaleY
+      const actualCropX = cropArea.x * scaleX
+      const actualCropY = cropArea.y * scaleY
+
+      canvas.width = actualCropWidth
+      canvas.height = actualCropHeight
+
+      // Draw cropped portion
+      ctx?.drawImage(
+        img,
+        actualCropX, actualCropY, actualCropWidth, actualCropHeight,
+        0, 0, actualCropWidth, actualCropHeight
+      )
+
+      const croppedImageData = canvas.toDataURL('image/jpeg')
+      
+      // Update the card with cropped image
+      const updatedCard = {
+        ...editingCard,
+        croppedImageData: croppedImageData
+      }
+      
+      saveEditedCard(updatedCard)
+    }
+
+    img.src = editingCard.imageData
+  }
+
+  const handleQRScan = async () => {
+    try {
+      setError(null)
+      setIsScanning(true)
+      setScanMode('qr')
+      
+      setTimeout(() => {
+        const mockCard: ScannedCard = {
+          id: Date.now().toString(),
+          name: 'Jane Smith',
+          title: 'Marketing Manager',
+          company: 'Digital Agency',
+          email: 'jane@digitalagency.com',
+          phone: '+90 555 123 4567',
+          website: 'www.digitalagency.com.tr',
+          scannedAt: new Date(),
+          location: '', // Empty for manual input
+          notes: ''
+        }
+        
+        setScannedCards(prev => [mockCard, ...prev])
+        setScanResult('QR kod başarıyla tarandı!')
+        setIsScanning(false)
+        setScanMode(null)
+        
+        setTimeout(() => setScanResult(null), 3000)
+      }, 2000)
+    } catch (err) {
+      setError('QR kod tarama hatası')
+      setIsScanning(false)
+      setScanMode(null)
+    }
+  }
+
+  const handleCameraScan = async () => {
+    setScanMode('camera')
+    await startCamera()
+  }
+
+  return (
+    <>
+      <Navbar />
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #111827 0%, #7c3aed 25%, #ec4899 50%, #3730a3 75%, #111827 100%)',
+        paddingTop: '5rem'
+      }}>
+        <div style={{maxWidth: '1200px', margin: '0 auto', padding: '0 1rem 2rem'}}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            style={{maxWidth: '64rem', margin: '0 auto'}}
+          >
+            <div style={{textAlign: 'center', marginBottom: '2rem', padding: '2rem 0'}}>
+              <h1 style={{fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '1rem'}}>Kartvizit Tarama</h1>
+              <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '1.125rem'}}>
+                QR kod veya kamera ile kartvizit bilgilerini dijital ortama aktarın
+              </p>
+            </div>
+
+            {/* Scanner Options */}
+            {!scanMode && !isScanning && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem'}}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleQRScan}
+                  style={{
+                    padding: '2rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '1rem',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                >
+                  <QrCode style={{width: '4rem', height: '4rem', color: '#22d3ee', marginBottom: '1rem'}} />
+                  <h3 style={{fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '0.5rem'}}>QR Kod Tarama</h3>
+                  <p style={{color: 'rgba(255,255,255,0.7)', lineHeight: '1.4'}}>
+                    Kartvizit üzerindeki QR kodu tarayarak bilgileri otomatik olarak kaydedin
+                  </p>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleCameraScan}
+                  style={{
+                    padding: '2rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '1rem',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                >
+                  <Camera style={{width: '4rem', height: '4rem', color: '#c084fc', marginBottom: '1rem'}} />
+                  <h3 style={{fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '0.5rem'}}>Kamera ile Tarama</h3>
+                  <p style={{color: 'rgba(255,255,255,0.7)', lineHeight: '1.4'}}>
+                    Kartvizit fotoğrafı çekerek bilgileri otomatik olarak çıkarın
+                  </p>
+                </motion.button>
+              </motion.div>
+            )}
+
+            {/* QR Scanner */}
+            {scanMode === 'qr' && isScanning && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  padding: '2rem',
+                  marginBottom: '2rem',
+                  textAlign: 'center'
+                }}
+              >
+                <div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '6rem',
+                    height: '6rem',
+                    background: 'rgba(34,211,238,0.2)',
+                    borderRadius: '50%',
+                    marginBottom: '1rem'
+                  }}>
+                    <Scan style={{width: '3rem', height: '3rem', color: '#22d3ee', animation: 'pulse 2s infinite'}} />
+                  </div>
+                  <h3 style={{fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '0.5rem'}}>QR Kod Taranıyor...</h3>
+                  <p style={{color: 'rgba(255,255,255,0.7)', marginBottom: '1.5rem'}}>
+                    QR kodunu kamera görüş alanına getirin
+                  </p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setIsScanning(false)
+                      setScanMode(null)
+                    }}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'rgba(239,68,68,0.2)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: '0.75rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.3)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                  >
+                    İptal Et
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Camera Scanner */}
+            {scanMode === 'camera' && isScanning && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  padding: '1.5rem',
+                  marginBottom: '2rem'
+                }}
+              >
+                <div style={{position: 'relative'}}>
+                  <video
+                    ref={videoRef}
+                    style={{
+                      width: '100%',
+                      height: '20rem',
+                      objectFit: 'cover',
+                      borderRadius: '0.75rem',
+                      background: 'black'
+                    }}
+                    playsInline
+                  />
+                  <canvas
+                    ref={canvasRef}
+                    style={{display: 'none'}}
+                  />
+                  
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none'
+                  }}>
+                    <div style={{
+                      width: '16rem',
+                      height: '10rem',
+                      border: '2px dashed rgba(255,255,255,0.5)',
+                      borderRadius: '0.5rem'
+                    }}></div>
+                  </div>
+                </div>
+                
+                <div style={{display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem'}}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={captureImage}
+                    style={{
+                      padding: '0.75rem 2rem',
+                      background: 'linear-gradient(to right, #8b5cf6, #ec4899)',
+                      color: 'white',
+                      borderRadius: '0.75rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      border: 'none'
+                    }}
+                  >
+                    <Camera style={{width: '1.25rem', height: '1.25rem'}} />
+                    Fotoğraf Çek
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={stopCamera}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'rgba(239,68,68,0.2)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: '0.75rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.3)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                  >
+                    <X style={{width: '1.25rem', height: '1.25rem'}} />
+                    İptal
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Success/Error Messages */}
+            {scanResult && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  padding: '1rem',
+                  background: 'rgba(34,197,94,0.2)',
+                  border: '1px solid rgba(34,197,94,0.3)',
+                  borderRadius: '0.75rem',
+                  marginBottom: '2rem'
+                }}
+              >
+                <CheckCircle style={{width: '1.5rem', height: '1.5rem', color: '#4ade80'}} />
+                <span style={{color: '#4ade80', fontWeight: '500'}}>{scanResult}</span>
+              </motion.div>
+            )}
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  padding: '1rem',
+                  background: 'rgba(239,68,68,0.2)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: '0.75rem',
+                  marginBottom: '2rem'
+                }}
+              >
+                <AlertCircle style={{width: '1.5rem', height: '1.5rem', color: '#f87171'}} />
+                <span style={{color: '#f87171', fontWeight: '500'}}>{error}</span>
+              </motion.div>
+            )}
+
+            {/* Scanned Cards */}
+            {scannedCards.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6"
+              >
+                <h3 className="text-xl font-semibold text-white mb-6">
+                  Taranan Kartvizitler ({scannedCards.length})
+                </h3>
+                
+                <div className="space-y-4">
+                  {scannedCards.map((card) => (
+                    <motion.div
+                      key={card.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-4 bg-white/5 rounded-xl border border-white/10"
+                    >
+                      <div className="flex gap-4">
+                        {(card.croppedImageData || card.imageData) && (
+                          <div className="w-24 h-16 bg-white/10 rounded-lg overflow-hidden flex-shrink-0">
+                            <img 
+                              src={card.croppedImageData || card.imageData} 
+                              alt="Kartvizit" 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="space-y-1">
+                              <h4 className="text-white font-semibold text-lg">{card.name}</h4>
+                              {card.title && (
+                                <p className="text-white/80 text-sm">{card.title}</p>
+                              )}
+                              {card.company && (
+                                <p className="text-white/70 text-sm">{card.company}</p>
+                              )}
+                              <div className="flex flex-wrap gap-4 mt-2">
+                                {card.email && (
+                                  <span className="text-cyan-400 text-sm">{card.email}</span>
+                                )}
+                                {card.phone && (
+                                  <span className="text-purple-400 text-sm">{card.phone}</span>
+                                )}
+                                {card.website && (
+                                  <span className="text-orange-400 text-sm">{card.website}</span>
+                                )}
+                              </div>
+                              
+                              {/* Location and Notes */}
+                              <div className="flex flex-col gap-1 mt-2">
+                                {card.location && (
+                                  <div className="flex items-center gap-1 text-xs text-white/60">
+                                    <MapPin className="w-3 h-3" />
+                                    <span>{card.location}</span>
+                                  </div>
+                                )}
+                                {card.notes && (
+                                  <div className="flex items-center gap-1 text-xs text-white/60">
+                                    <StickyNote className="w-3 h-3" />
+                                    <span>{card.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-white/50 text-xs">
+                                {card.scannedAt.toLocaleString('tr-TR')}
+                              </span>
+                              <div className="flex items-center gap-1 text-xs text-white/40">
+                                <Calendar className="w-3 h-3" />
+                                <span>{card.scannedAt.toLocaleDateString('tr-TR')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 mt-3">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => editCard(card)}
+                              className="px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-400/30 rounded-lg hover:bg-blue-500/30 transition-all duration-300 flex items-center gap-1 text-sm"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              Düzenle
+                            </motion.button>
+                            
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => saveToCollection(card)}
+                              className="px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-400/30 rounded-lg hover:bg-green-500/30 transition-all duration-300 flex items-center gap-1 text-sm"
+                            >
+                              <Save className="w-3 h-3" />
+                              Kolleksiyona Ekle
+                            </motion.button>
+                            
+                            {card.imageData && (
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                  setEditingCard(card)
+                                  setCropMode(true)
+                                }}
+                                className="px-3 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-500/30 transition-all duration-300 flex items-center gap-1 text-sm"
+                              >
+                                <Crop className="w-3 h-3" />
+                                Kırp
+                              </motion.button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Edit Card Modal */}
+            {editingCard && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={() => setEditingCard(null)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-gray-900/95 backdrop-blur-lg rounded-2xl border border-white/20 p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-semibold text-white">
+                      {cropMode ? 'Kartvizit Kırpma' : 'Kartvizit Düzenleme'}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setEditingCard(null)
+                        setCropMode(false)
+                      }}
+                      className="text-white/60 hover:text-white transition-colors"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {cropMode && editingCard.imageData ? (
+                    <div className="space-y-4">
+                      <div className="relative bg-black rounded-lg overflow-hidden">
+                        <img 
+                          ref={cropImageRef}
+                          src={editingCard.imageData} 
+                          alt="Kartvizit" 
+                          className="w-full h-auto max-h-96 object-contain"
+                          onLoad={(e) => {
+                            const img = e.target as HTMLImageElement
+                            setCropArea({
+                              x: 40,
+                              y: 40,
+                              width: Math.max(200, img.clientWidth * 0.6),
+                              height: Math.max(120, img.clientHeight * 0.6)
+                            })
+                          }}
+                        />
+                        
+                        {/* Crop Selection Overlay */}
+                        <div 
+                          className="absolute border-2 border-dashed border-purple-400 bg-purple-400/10 cursor-move"
+                          style={{
+                            left: cropArea.x,
+                            top: cropArea.y,
+                            width: cropArea.width,
+                            height: cropArea.height,
+                          }}
+                          onMouseDown={(e) => {
+                            const rect = e.currentTarget.parentElement?.getBoundingClientRect()
+                            if (!rect) return
+                            
+                            const startX = e.clientX - rect.left - cropArea.x
+                            const startY = e.clientY - rect.top - cropArea.y
+                            
+                            const handleMouseMove = (e: MouseEvent) => {
+                              const newX = e.clientX - rect.left - startX
+                              const newY = e.clientY - rect.top - startY
+                              
+                              setCropArea(prev => ({
+                                ...prev,
+                                x: Math.max(0, Math.min(newX, rect.width - prev.width)),
+                                y: Math.max(0, Math.min(newY, rect.height - prev.height))
+                              }))
+                            }
+                            
+                            const handleMouseUp = () => {
+                              document.removeEventListener('mousemove', handleMouseMove)
+                              document.removeEventListener('mouseup', handleMouseUp)
+                            }
+                            
+                            document.addEventListener('mousemove', handleMouseMove)
+                            document.addEventListener('mouseup', handleMouseUp)
+                          }}
+                        >
+                          <div className="absolute -top-6 left-0 bg-purple-500/80 backdrop-blur-sm px-2 py-1 rounded text-white text-xs">
+                            Kırpılacak alan - sürükleyerek taşıyın
+                          </div>
+                          
+                          {/* Resize handles */}
+                          <div className="absolute -right-1 -bottom-1 w-3 h-3 bg-purple-400 cursor-se-resize"
+                            onMouseDown={(e) => {
+                              e.stopPropagation()
+                              const rect = e.currentTarget.parentElement?.parentElement?.getBoundingClientRect()
+                              if (!rect) return
+                              
+                              const handleMouseMove = (e: MouseEvent) => {
+                                const newWidth = e.clientX - rect.left - cropArea.x
+                                const newHeight = e.clientY - rect.top - cropArea.y
+                                
+                                setCropArea(prev => ({
+                                  ...prev,
+                                  width: Math.max(50, Math.min(newWidth, rect.width - prev.x)),
+                                  height: Math.max(50, Math.min(newHeight, rect.height - prev.y))
+                                }))
+                              }
+                              
+                              const handleMouseUp = () => {
+                                document.removeEventListener('mousemove', handleMouseMove)
+                                document.removeEventListener('mouseup', handleMouseUp)
+                              }
+                              
+                              document.addEventListener('mousemove', handleMouseMove)
+                              document.addEventListener('mouseup', handleMouseUp)
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <canvas ref={cropCanvasRef} className="hidden" />
+                      
+                      <div className="flex justify-between gap-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setCropMode(false)}
+                          className="px-4 py-2 bg-gray-500/20 text-gray-400 border border-gray-400/30 rounded-xl hover:bg-gray-500/30 transition-all duration-300"
+                        >
+                          Geri Dön
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={applyCrop}
+                          className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2"
+                        >
+                          <Crop className="w-4 h-4" />
+                          Kırp ve Kaydet
+                        </motion.button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {editingCard.imageData && (
+                        <div className="w-32 h-20 bg-white/10 rounded-lg overflow-hidden mx-auto">
+                          <img 
+                            src={editingCard.imageData} 
+                            alt="Kartvizit" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">Ad Soyad</label>
+                          <input
+                            type="text"
+                            value={editingCard.name}
+                            onChange={(e) => setEditingCard({...editingCard, name: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">Unvan</label>
+                          <input
+                            type="text"
+                            value={editingCard.title || ''}
+                            onChange={(e) => setEditingCard({...editingCard, title: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">Şirket</label>
+                          <input
+                            type="text"
+                            value={editingCard.company || ''}
+                            onChange={(e) => setEditingCard({...editingCard, company: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">E-posta</label>
+                          <input
+                            type="email"
+                            value={editingCard.email || ''}
+                            onChange={(e) => setEditingCard({...editingCard, email: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">Telefon</label>
+                          <input
+                            type="tel"
+                            value={editingCard.phone || ''}
+                            onChange={(e) => setEditingCard({...editingCard, phone: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">Website</label>
+                          <input
+                            type="url"
+                            value={editingCard.website || ''}
+                            onChange={(e) => setEditingCard({...editingCard, website: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                          <label className="block text-white/80 text-sm mb-2">Notlar</label>
+                          <textarea
+                            value={editingCard.notes || ''}
+                            onChange={(e) => setEditingCard({...editingCard, notes: e.target.value})}
+                            placeholder="Kartvizit hakkında notlarınızı yazın..."
+                            rows={3}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400 resize-none"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-white/80 text-sm mb-2">Konum</label>
+                          <input
+                            type="text"
+                            value={editingCard.location || ''}
+                            onChange={(e) => setEditingCard({...editingCard, location: e.target.value})}
+                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-cyan-400"
+                            placeholder="Kartvizit alındığı konum"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between gap-4 pt-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setEditingCard(null)}
+                          className="px-4 py-2 bg-gray-500/20 text-gray-400 border border-gray-400/30 rounded-xl hover:bg-gray-500/30 transition-all duration-300"
+                        >
+                          İptal
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => saveEditedCard(editingCard)}
+                          className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          Değişiklikleri Kaydet
+                        </motion.button>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+      </div>
+    </>
+  )
+}

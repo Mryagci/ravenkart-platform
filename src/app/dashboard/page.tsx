@@ -120,12 +120,14 @@ END:VCARD`;
   }
 
   return (
-    <div className="min-h-screen gradient-bg">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #111827 0%, #7c3aed 25%, #ec4899 50%, #3730a3 75%, #111827 100%)'
+    }}>
       <Navbar />
-
       
-      <div className="pt-20 pb-10 px-4">
-        <div className="container mx-auto max-w-4xl">
+      <div style={{paddingTop: '5rem', paddingBottom: '2.5rem', padding: '5rem 1rem 2.5rem'}}>
+        <div style={{maxWidth: '64rem', margin: '0 auto'}}>
           {businessCard ? (
             // Show existing business card
             <motion.div

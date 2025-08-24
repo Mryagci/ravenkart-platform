@@ -85,35 +85,52 @@ const Navbar = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-white/10"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
+      }}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div style={{maxWidth: '1200px', margin: '0 auto', padding: '0 1rem'}}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '4rem'}}>
           {/* Logo */}
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="flex items-center gap-2 cursor-pointer flex-shrink-0"
+            style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flexShrink: 0}}
             onClick={() => router.push('/')}
           >
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-orange-400 rounded-lg flex items-center justify-center">
-              <QrCode className="w-5 h-5 text-white" />
+            <div style={{width: '2rem', height: '2rem', background: 'linear-gradient(to right, #22d3ee, #fb7185)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <QrCode style={{width: '1.25rem', height: '1.25rem', color: 'white'}} />
             </div>
-            <span className="text-xl font-bold text-white">RAVENKART</span>
+            <span style={{fontSize: '1.25rem', fontWeight: 'bold', color: 'white'}}>RAVENKART</span>
           </motion.div>
 
           {/* Desktop Navigation - Centered */}
-          <div className="hidden md:flex items-center justify-center flex-1">
-            <nav className="flex items-center gap-6">
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1}} className="hidden md:flex">
+            <nav style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 onClick={() => router.push('/')}
-                className={`flex items-center gap-2 transition-colors duration-300 ${
-                  isActive('/') 
-                    ? 'text-white font-semibold' 
-                    : 'text-white/80 hover:text-white'
-                }`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.3s ease',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: isActive('/') ? 'white' : 'rgba(255,255,255,0.8)',
+                  fontWeight: isActive('/') ? '600' : '400'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                onMouseLeave={(e) => e.currentTarget.style.color = isActive('/') ? 'white' : 'rgba(255,255,255,0.8)'}
               >
-                <Home className="w-4 h-4" />
+                <Home style={{width: '1rem', height: '1rem'}} />
                 Ana Sayfa
               </motion.button>
               

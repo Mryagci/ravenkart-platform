@@ -29,10 +29,21 @@ function AuthForm() {
       setLoading(true);
 
       // HER SEFERINDE YENİ CLIENT - listener yok!
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      
+      if (!supabaseUrl) {
+        throw new Error("NEXT_PUBLIC_SUPABASE_URL is required. Check .env.local file.");
+      }
+      if (!supabaseAnonKey) {
+        throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is required. Check .env.local file.");
+      }
+      
       const { createClient } = await import("@supabase/supabase-js");
       const freshSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseAnonKey,
         { auth: { persistSession: true, autoRefreshToken: false } } // auto refresh KAPALI
       );
 
