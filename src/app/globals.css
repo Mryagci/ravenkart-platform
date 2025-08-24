@@ -85,6 +85,97 @@
   border-radius: 12px;
 }
 
+.glass-effect {
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.glass-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.4), 
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.glass-effect:hover::before {
+  left: 100%;
+}
+
+.glass-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(134, 239, 172, 0.1), 
+    rgba(59, 130, 246, 0.08),
+    rgba(236, 72, 153, 0.1)
+  );
+  animation: glassShimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Floating gradient orb */
+.glass-effect:hover::after {
+  background: linear-gradient(135deg, 
+    rgba(134, 239, 172, 0.2), 
+    rgba(59, 130, 246, 0.15),
+    rgba(236, 72, 153, 0.2)
+  );
+  animation: glassShimmerHover 2s ease-in-out infinite;
+}
+
+@keyframes glassShimmer {
+  0%, 100% { 
+    background: linear-gradient(135deg, 
+      rgba(134, 239, 172, 0.1), 
+      rgba(59, 130, 246, 0.08),
+      rgba(236, 72, 153, 0.1)
+    );
+  }
+  50% { 
+    background: linear-gradient(135deg, 
+      rgba(236, 72, 153, 0.12), 
+      rgba(134, 239, 172, 0.1),
+      rgba(59, 130, 246, 0.12)
+    );
+  }
+}
+
+@keyframes glassShimmerHover {
+  0%, 100% { 
+    background: linear-gradient(135deg, 
+      rgba(134, 239, 172, 0.2), 
+      rgba(59, 130, 246, 0.15),
+      rgba(236, 72, 153, 0.2)
+    );
+  }
+  33% { 
+    background: linear-gradient(135deg, 
+      rgba(59, 130, 246, 0.25), 
+      rgba(236, 72, 153, 0.2),
+      rgba(134, 239, 172, 0.25)
+    );
+  }
+  66% { 
+    background: linear-gradient(135deg, 
+      rgba(236, 72, 153, 0.3), 
+      rgba(134, 239, 172, 0.25),
+      rgba(59, 130, 246, 0.3)
+    );
+  }
+}
+
 /* Animation utilities */
 .fade-in {
   animation: fadeIn 0.5s ease-in-out;
@@ -113,4 +204,55 @@
 .btn-gradient:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Blob animations */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Gradient animations */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animate {
+  background: linear-gradient(-45deg, #1e293b, #7c3aed, #ec4899, #3730a3, #be185d, #334155);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #111827 0%, #7c3aed 25%, #ec4899 50%, #3730a3 75%, #111827 100%);
 }

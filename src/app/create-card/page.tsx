@@ -197,24 +197,15 @@ export default function CreateCard() {
 
   const generateQRCode = async () => {
     try {
-      if (!cardData.name) {
+      if (!cardData.name || !user?.id) {
         setQrCodeUrl('');
         return;
       }
 
-      // Create vCard data for QR code
-      const vCardData = `BEGIN:VCARD
-VERSION:3.0
-FN:${cardData.name}
-ORG:${cardData.company}
-TITLE:${cardData.title}
-TEL:${cardData.phone}
-EMAIL:${cardData.email}
-URL:${cardData.website}
-ADR:;;;${cardData.location};;;
-END:VCARD`;
+      // Create URL for visitor mode
+      const visitorUrl = `${window.location.origin}/u/${user.id}`;
 
-      const qrDataUrl = await QRCode.toDataURL(vCardData, {
+      const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
         width: 200,
         margin: 1,
         color: {
@@ -232,7 +223,7 @@ END:VCARD`;
   // Generate QR code when card data changes
   useEffect(() => {
     generateQRCode();
-  }, [cardData.name, cardData.company, cardData.title, cardData.phone, cardData.email, cardData.website, cardData.location, cardData.textColor]);
+  }, [cardData.name, cardData.textColor, user?.id]);
 
   const exportVCF = () => {
     if (!cardData.name) {

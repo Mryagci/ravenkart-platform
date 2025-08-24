@@ -46,24 +46,15 @@ export default function Dashboard() {
 
   const generateQRCode = async () => {
     try {
-      if (!businessCard?.name) {
+      if (!businessCard?.name || !user?.id) {
         setQrCodeUrl('');
         return;
       }
 
-      // Create vCard data for QR code
-      const vCardData = `BEGIN:VCARD
-VERSION:3.0
-FN:${businessCard.name}
-ORG:${businessCard.company}
-TITLE:${businessCard.title}
-TEL:${businessCard.phone}
-EMAIL:${businessCard.email}
-URL:${businessCard.website}
-ADR:;;;${businessCard.location};;;
-END:VCARD`;
+      // Create URL for visitor mode
+      const visitorUrl = `${window.location.origin}/u/${user.id}`;
 
-      const qrDataUrl = await QRCode.toDataURL(vCardData, {
+      const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
         width: 200,
         margin: 1,
         color: {
@@ -371,18 +362,15 @@ END:VCARD`;
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => router.push('/create-card')}
-                  className="flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl border border-white/30 hover:bg-white/30 transition-all duration-300"
+                  className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-2xl shadow-2xl overflow-hidden"
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Edit3 className="w-5 h-5" />
-                  Düzenle
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <QrCode className="w-5 h-5" />
-                  QR Kod Oluştur
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                  <span className="relative z-10 flex items-center gap-2 text-lg">
+                    <Edit3 className="w-5 h-5" />
+                    Kartviziti Düzenle
+                  </span>
                 </motion.button>
               </div>
             </motion.div>

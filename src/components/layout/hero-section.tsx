@@ -49,12 +49,26 @@ const HeroSection = () => {
       paddingTop: '4rem'
     }}>
       {/* Animated gradient background */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(135deg, #334155 0%, #7c3aed 15%, #ec4899 35%, #3730a3 55%, #be185d 75%, #1e293b 100%)',
-        opacity: 0.9
-      }} />
+      <motion.div 
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, #334155 0%, #7c3aed 15%, #ec4899 35%, #3730a3 55%, #be185d 75%, #1e293b 100%)',
+          opacity: 0.9
+        }}
+        animate={{
+          background: [
+            'linear-gradient(135deg, #334155 0%, #7c3aed 15%, #ec4899 35%, #3730a3 55%, #be185d 75%, #1e293b 100%)',
+            'linear-gradient(135deg, #1e293b 0%, #be185d 15%, #3730a3 35%, #ec4899 55%, #7c3aed 75%, #334155 100%)',
+            'linear-gradient(135deg, #334155 0%, #7c3aed 15%, #ec4899 35%, #3730a3 55%, #be185d 75%, #1e293b 100%)'
+          ]
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
       
       {/* Floating elements */}
       <div style={{position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none'}}>
@@ -242,24 +256,53 @@ const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.8 }}
           >
             {[
-              { icon: QrCode, title: "QR & NFC", desc: "Anında paylaşım" },
-              { icon: Smartphone, title: "Mobil Uyumlu", desc: "Her cihazda mükemmel" },
-              { icon: Users, title: "Takım Yönetimi", desc: "Organizasyon desteği" },
-              { icon: TrendingUp, title: "Analitik", desc: "Detaylı istatistikler" }
-            ].map((feature, index) => (
+              { icon: QrCode, title: "QR & NFC", desc: "Anında paylaşım", color: "cyan" },
+              { icon: Smartphone, title: "Mobil Uyumlu", desc: "Her cihazda mükemmel", color: "blue" },
+              { icon: Users, title: "Takım Yönetimi", desc: "Organizasyon desteği", color: "purple" },
+              { icon: TrendingUp, title: "Analitik", desc: "Detaylı istatistikler", color: "pink" }
+            ].map((feature, index) => {
+              const colorMap = {
+                cyan: "text-cyan-300 group-hover:text-cyan-100",
+                blue: "text-blue-300 group-hover:text-blue-100", 
+                purple: "text-purple-300 group-hover:text-purple-100",
+                pink: "text-pink-300 group-hover:text-pink-100"
+              };
+              return (
               <motion.div
                 key={feature.title}
-                className="glass-effect rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 cursor-pointer"
-                whileHover={{ y: -5 }}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
+                className="glass-effect rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 cursor-pointer group"
+                whileHover={{ 
+                  y: -8, 
+                  scale: 1.02,
+                  rotateY: 2,
+                  rotateX: 2 
+                }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 30, rotateY: -10 }}
+                animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: 0.8 + index * 0.15,
+                  type: "spring",
+                  stiffness: 100
+                }}
+                style={{
+                  transformStyle: 'preserve-3d'
+                }}
               >
-                <feature.icon className="w-8 h-8 mx-auto mb-3 text-blue-300" />
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-300">{feature.desc}</p>
+                <div className="relative z-10">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <feature.icon className={`w-8 h-8 mx-auto mb-3 ${colorMap[feature.color]} transition-colors duration-300`} />
+                  </motion.div>
+                  <h3 className="font-semibold mb-2 text-white group-hover:text-cyan-100 transition-colors duration-300">{feature.title}</h3>
+                  <p className="text-sm text-gray-300 group-hover:text-gray-100 transition-colors duration-300">{feature.desc}</p>
+                </div>
               </motion.div>
-            ))}
+              );
+            })}
           </motion.div>
         </motion.div>
       </div>
