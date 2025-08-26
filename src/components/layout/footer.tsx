@@ -2,23 +2,21 @@
 
 import { motion } from 'framer-motion'
 import { Github, Twitter, Linkedin, Mail, MapPin, Phone } from 'lucide-react'
+import { useContactInfo } from '@/hooks/useContactInfo'
 
 const footerLinks = {
   product: {
     title: "Ürün",
     links: [
       { name: "Özellikler", href: "#features" },
-      { name: "Fiyatlandırma", href: "#pricing" },
-      { name: "Demo", href: "/demo" },
-      { name: "Güncellemeler", href: "/updates" }
+      { name: "Fiyatlandırma", href: "/pricing" },
+      { name: "Demo", href: "/demo" }
     ]
   },
   company: {
     title: "Şirket",
     links: [
       { name: "Hakkımızda", href: "/about" },
-      { name: "Blog", href: "/blog" },
-      { name: "Kariyer", href: "/careers" },
       { name: "İletişim", href: "/contact" }
     ]
   },
@@ -26,31 +24,31 @@ const footerLinks = {
     title: "Destek",
     links: [
       { name: "Yardım Merkezi", href: "/help" },
-      { name: "Dokümantasyon", href: "/docs" },
-      { name: "API", href: "/api" },
-      { name: "Durum", href: "/status" }
+      { name: "Kargo Politikası", href: "/shipping" },
+      { name: "Para İade Politikası", href: "/refund" }
     ]
   },
   legal: {
     title: "Hukuki",
     links: [
-      { name: "Gizlilik", href: "/privacy" },
-      { name: "Şartlar", href: "/terms" },
-      { name: "Çerezler", href: "/cookies" },
-      { name: "Lisanslar", href: "/licenses" }
+      { name: "Gizlilik Politikası", href: "/privacy" },
+      { name: "Hizmet Şartları", href: "/terms" },
+      { name: "Çerez Politikası", href: "/cookies" },
+      { name: "Yasal Bildirim", href: "/legal" }
     ]
   }
 }
 
-const socialLinks = [
-  { name: "Twitter", icon: Twitter, href: "#", color: "hover:text-blue-400" },
-  { name: "LinkedIn", icon: Linkedin, href: "#", color: "hover:text-blue-600" },
-  { name: "GitHub", icon: Github, href: "#", color: "hover:text-gray-400" },
-  { name: "Email", icon: Mail, href: "mailto:hello@ravenkart.com", color: "hover:text-red-400" }
-]
-
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const { contactInfo } = useContactInfo()
+  
+  const socialLinks = [
+    { name: "Twitter", icon: Twitter, href: contactInfo.social?.twitter ? `https://twitter.com/${contactInfo.social.twitter.replace('@', '')}` : "#", color: "hover:text-blue-400" },
+    { name: "LinkedIn", icon: Linkedin, href: contactInfo.social?.linkedin ? `https://linkedin.com/${contactInfo.social.linkedin}` : "#", color: "hover:text-blue-600" },
+    { name: "GitHub", icon: Github, href: "#", color: "hover:text-gray-400" },
+    { name: "Email", icon: Mail, href: `mailto:${contactInfo.emails?.general || 'hello@ravenkart.com'}`, color: "hover:text-red-400" }
+  ]
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -79,15 +77,17 @@ export default function Footer() {
             <div className="space-y-3 mb-6">
               <div className="flex items-center text-gray-400 hover:text-white transition-colors">
                 <MapPin className="w-4 h-4 mr-3" />
-                <span className="text-sm">İstanbul, Türkiye</span>
+                <span className="text-sm">
+                  {contactInfo.address?.district || 'Sarıyer/İstanbul'}{contactInfo.address?.country && contactInfo.address.country !== 'Türkiye' ? `, ${contactInfo.address.country}` : ''}
+                </span>
               </div>
               <div className="flex items-center text-gray-400 hover:text-white transition-colors">
                 <Phone className="w-4 h-4 mr-3" />
-                <span className="text-sm">+90 (212) 123 45 67</span>
+                <span className="text-sm">{contactInfo.phones?.support || '+90 (212) 123 45 67'}</span>
               </div>
               <div className="flex items-center text-gray-400 hover:text-white transition-colors">
                 <Mail className="w-4 h-4 mr-3" />
-                <span className="text-sm">hello@ravenkart.com</span>
+                <span className="text-sm">{contactInfo.emails?.general || 'hello@ravenkart.com'}</span>
               </div>
             </div>
 

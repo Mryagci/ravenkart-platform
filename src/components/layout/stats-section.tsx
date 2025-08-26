@@ -5,13 +5,13 @@ import { useRef, useState, useEffect } from 'react'
 
 const stats = [
   {
-    number: 10000,
-    suffix: '+',
+    number: 1990,
+    suffix: '',
     label: 'Aktif Kullanıcı',
     description: 'Güvenle kullanan iş profesyoneli'
   },
   {
-    number: 50000,
+    number: 12000,
     suffix: '+',
     label: 'Paylaşım',
     description: 'Günlük kartvizit paylaşımı'
@@ -23,8 +23,8 @@ const stats = [
     description: 'Kullanıcı memnuniyet oranı'
   },
   {
-    number: 24,
-    suffix: '/7',
+    number: 7,
+    suffix: '/24',
     label: 'Destek',
     description: 'Kesintisiz müşteri desteği'
   }

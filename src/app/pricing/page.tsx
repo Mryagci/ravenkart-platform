@@ -71,48 +71,92 @@ export default function Pricing() {
     }
   ]
 
-  const handleSubscribe = (plan: typeof plans[0]) => {
+  const handleSubscribe = async (plan: typeof plans[0]) => {
     if (!user) {
       router.push('/auth?mode=register')
       return
     }
-    
-    // Here you would integrate with a payment provider like Stripe
-    alert(`${plan.name} planına abone olma işlevi yakında eklenecek!`)
+
+    try {
+      setLoading(true)
+
+      // Map plan names to API format
+      let planType = 'personal'
+      if (plan.name === 'Kişisel') planType = 'personal'
+      else if (plan.name === 'Takım (5+ Kişi)') planType = 'professional'
+      else planType = 'enterprise'
+
+      // Send payment initiation request
+      const response = await fetch('/api/paytr/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': user.id
+        },
+        body: JSON.stringify({
+          planType: planType,
+          billingCycle: billingCycle,
+          userEmail: user.email,
+          userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Kullanıcı',
+          userPhone: user.user_metadata?.phone || undefined
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ödeme başlatılamadı')
+      }
+
+      // Redirect to PayTR payment page
+      if (data.iframeUrl) {
+        window.location.href = data.iframeUrl
+      } else if (data.paymentToken) {
+        window.location.href = `https://www.paytr.com/odeme/guvenli/${data.paymentToken}`
+      } else {
+        throw new Error('Ödeme URL\'si alınamadı')
+      }
+
+    } catch (error) {
+      console.error('Payment error:', error)
+      alert('Ödeme başlatılırken hata oluştu: ' + (error as Error).message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen gradient-bg">
       <Navbar />
       
-      <div className="pt-20 pb-16 px-4">
+      <div className="pt-16 pb-16 px-4">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-16"
+            className="text-center mb-12 md:mb-16"
           >
-            <h1 className="text-5xl font-bold text-white mb-6">
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6">
               Dijital Kartvizitinizin Gücünü
               <br />
               <span className="bg-gradient-to-r from-cyan-400 to-orange-400 bg-clip-text text-transparent">
                 Keşfedin
               </span>
             </h1>
-            <p className="text-xl text-white/70 mb-8 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-white/70 mb-6 md:mb-8 max-w-3xl mx-auto px-4">
               Profesyonel dijital kartvizitinizi oluşturun ve iş ağınızı genişletin. 
               Ücretsiz deneme ile başlayın, istediğiniz zaman iptal edin.
             </p>
 
             {/* Billing Toggle */}
-            <div className="flex items-center justify-center mb-12">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 border border-white/20">
-                <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center mb-8 md:mb-12">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-1.5 md:p-2 border border-white/20">
+                <div className="flex items-center gap-2 md:gap-4">
                   <button
                     onClick={() => setBillingCycle('monthly')}
-                    className={`px-6 py-3 rounded-xl transition-all duration-300 ${
+                    className={`px-4 md:px-6 py-2 md:py-3 rounded-xl transition-all duration-300 text-sm md:text-base ${
                       billingCycle === 'monthly'
                         ? 'bg-white text-gray-900 shadow-lg'
                         : 'text-white/80 hover:text-white'
@@ -122,14 +166,14 @@ export default function Pricing() {
                   </button>
                   <button
                     onClick={() => setBillingCycle('yearly')}
-                    className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 ${
+                    className={`px-4 md:px-6 py-2 md:py-3 rounded-xl transition-all duration-300 flex items-center gap-1 md:gap-2 text-sm md:text-base ${
                       billingCycle === 'yearly'
                         ? 'bg-white text-gray-900 shadow-lg'
                         : 'text-white/80 hover:text-white'
                     }`}
                   >
                     Yıllık
-                    <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                    <span className="bg-green-500 text-white text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">
                       %17 İndirim
                     </span>
                   </button>
@@ -139,44 +183,44 @@ export default function Pricing() {
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 }}
-                className={`relative bg-white/10 backdrop-blur-sm rounded-3xl border border-white/20 p-8 ${
+                className={`relative bg-white/10 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-white/20 p-4 md:p-8 ${
                   plan.popular ? 'ring-2 ring-cyan-400/50 shadow-2xl shadow-cyan-400/25' : ''
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-cyan-400 to-orange-400 text-white px-6 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
-                      <Star className="w-4 h-4" />
+                  <div className="absolute -top-3 md:-top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-cyan-400 to-orange-400 text-white px-3 md:px-6 py-1 md:py-2 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 md:gap-2">
+                      <Star className="w-3 md:w-4 h-3 md:h-4" />
                       En Popüler
                     </div>
                   </div>
                 )}
 
-                <div className="text-center mb-8">
-                  <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${plan.color} mb-4`}>
-                    <plan.icon className="w-8 h-8 text-white" />
+                <div className="text-center mb-4 md:mb-8">
+                  <div className={`inline-flex p-3 md:p-4 rounded-2xl bg-gradient-to-r ${plan.color} mb-3 md:mb-4`}>
+                    <plan.icon className="w-6 md:w-8 h-6 md:h-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                  <p className="text-white/70 mb-6">{plan.description}</p>
+                  <h3 className="text-lg md:text-2xl font-bold text-white mb-1 md:mb-2">{plan.name}</h3>
+                  <p className="text-white/70 mb-3 md:mb-6 text-sm md:text-base">{plan.description}</p>
                   
-                  <div className="mb-6">
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-5xl font-bold text-white">
+                  <div className="mb-4 md:mb-6">
+                    <div className="flex items-baseline justify-center gap-1 md:gap-2">
+                      <span className="text-3xl md:text-5xl font-bold text-white">
                         ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
                       </span>
-                      <span className="text-white/70">
-                        /{billingCycle === 'monthly' ? 'ay' : 'yıl'}
+                      <span className="text-white/70 text-sm md:text-base">
+                        /ay
                       </span>
                     </div>
                     {billingCycle === 'yearly' && (
-                      <p className="text-green-400 text-sm mt-2">
+                      <p className="text-green-400 text-xs md:text-sm mt-1 md:mt-2">
                         Yıllık ödemede ${(plan.monthlyPrice - plan.yearlyPrice) * 12} tasarruf!
                       </p>
                     )}
@@ -184,13 +228,13 @@ export default function Pricing() {
                 </div>
 
                 {/* Features */}
-                <div className="space-y-4 mb-8">
+                <div className="space-y-2 md:space-y-4 mb-4 md:mb-8">
                   {plan.features.map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-                        <Check className="w-4 h-4 text-green-400" />
+                    <div key={featureIndex} className="flex items-center gap-2 md:gap-3">
+                      <div className="flex-shrink-0 w-5 md:w-6 h-5 md:h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                        <Check className="w-3 md:w-4 h-3 md:h-4 text-green-400" />
                       </div>
-                      <span className="text-white/90">{feature}</span>
+                      <span className="text-white/90 text-sm md:text-base">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -200,7 +244,7 @@ export default function Pricing() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSubscribe(plan)}
-                  className={`w-full py-4 rounded-2xl font-semibold text-white transition-all duration-300 ${
+                  className={`w-full py-3 md:py-4 rounded-xl md:rounded-2xl font-semibold text-white transition-all duration-300 text-sm md:text-base ${
                     plan.popular
                       ? 'bg-gradient-to-r from-cyan-400 to-orange-400 hover:shadow-lg hover:shadow-cyan-400/25'
                       : 'bg-white/20 hover:bg-white/30 border border-white/30'
@@ -217,42 +261,42 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-20 text-center"
+            className="mt-12 md:mt-20 text-center"
           >
-            <h2 className="text-3xl font-bold text-white mb-8">Sıkça Sorulan Sorular</h2>
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-semibold text-white mb-3">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8">Sıkça Sorulan Sorular</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   Ücretsiz deneme süresi var mı?
                 </h3>
-                <p className="text-white/70">
+                <p className="text-white/70 text-sm md:text-base">
                   Evet! 7 gün ücretsiz deneme ile tüm özellikleri test edebilirsiniz. 
                   Kredi kartı bilgisi gerekmez.
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-semibold text-white mb-3">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   İstediğim zaman iptal edebilir miyim?
                 </h3>
-                <p className="text-white/70">
+                <p className="text-white/70 text-sm md:text-base">
                   Tabii ki! Aboneliğinizi istediğiniz zaman iptal edebilirsiniz. 
                   Gizli ücret veya ceza yoktur.
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-semibold text-white mb-3">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   QR kodları gerçekten çalışıyor mu?
                 </h3>
-                <p className="text-white/70">
+                <p className="text-white/70 text-sm md:text-base">
                   Evet! QR kodlarımız vCard formatında gerçek iletişim bilgileri içerir 
                   ve tüm modern cihazlarda çalışır.
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-semibold text-white mb-3">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   Takım planında kaç kişi olabilir?
                 </h3>
-                <p className="text-white/70">
+                <p className="text-white/70 text-sm md:text-base">
                   Takım planı minimum 5 kişi içindir. Daha büyük ekipler için 
                   özel fiyatlandırma sunuyoruz.
                 </p>
@@ -265,20 +309,20 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="mt-16 text-center"
+            className="mt-8 md:mt-16 text-center"
           >
-            <div className="flex flex-wrap items-center justify-center gap-8 text-white/60">
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-white/60">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                <span>SSL Güvenlik</span>
+                <Shield className="w-4 md:w-5 h-4 md:h-5" />
+                <span className="text-sm md:text-base">SSL Güvenlik</span>
               </div>
               <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5" />
-                <span>99.9% Uptime</span>
+                <Zap className="w-4 md:w-5 h-4 md:h-5" />
+                <span className="text-sm md:text-base">99.9% Uptime</span>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span>10,000+ Mutlu Kullanıcı</span>
+                <Users className="w-4 md:w-5 h-4 md:h-5" />
+                <span className="text-sm md:text-base">10,000+ Mutlu Kullanıcı</span>
               </div>
             </div>
           </motion.div>

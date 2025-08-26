@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
 import { QrCode, Smartphone, Users, TrendingUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -46,7 +45,7 @@ const HeroSection = () => {
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
-      paddingTop: '4rem'
+      paddingTop: '3.5rem'
     }}>
       {/* Animated gradient background */}
       <motion.div 
@@ -204,44 +203,45 @@ const HeroSection = () => {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '1.5rem',
+              gap: '1rem',
               justifyContent: 'center',
               alignItems: 'center',
-              marginBottom: '4rem'
+              marginBottom: '4rem',
+              padding: '0 1rem'
             }}
-            className="sm:flex-row"
+            className="sm:flex-row sm:gap-6"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             {/* Modern animated buttons */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center w-full max-w-2xl">
               <motion.button
                 onClick={handleCreateCard}
-                className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-2xl shadow-2xl overflow-hidden"
+                className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden w-full sm:w-auto"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                <span className="relative z-10 flex items-center gap-2 text-lg">
-                  <QrCode className="w-5 h-5" />
-                  Dijital Kartvizitini Oluştur
+                <span className="relative z-10 flex items-center justify-center gap-2 text-base sm:text-lg">
+                  <QrCode className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="text-center">Dijital Kartvizitini Oluştur</span>
                 </span>
               </motion.button>
               
               <motion.button
                 onClick={() => router.push('/dashboard')}
-                className="group relative px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-2xl shadow-2xl overflow-hidden"
+                className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden w-full sm:w-auto"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                <span className="relative z-10 flex items-center gap-2 text-lg">
-                  <Users className="w-5 h-5" />
+                <span className="relative z-10 flex items-center justify-center gap-2 text-base sm:text-lg">
+                  <Users className="w-4 sm:w-5 h-4 sm:h-5" />
                   Kartvizitim
                 </span>
               </motion.button>
@@ -250,7 +250,7 @@ const HeroSection = () => {
 
           {/* Feature cards */}
           <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
@@ -270,7 +270,7 @@ const HeroSection = () => {
               return (
               <motion.div
                 key={feature.title}
-                className="glass-effect rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 cursor-pointer group"
+                className="glass-effect rounded-lg md:rounded-xl p-4 md:p-6 text-center hover:bg-white/20 transition-all duration-300 cursor-pointer group"
                 whileHover={{ 
                   y: -8, 
                   scale: 1.02,
@@ -295,10 +295,10 @@ const HeroSection = () => {
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <feature.icon className={`w-8 h-8 mx-auto mb-3 ${colorMap[feature.color]} transition-colors duration-300`} />
+                    <feature.icon className={`w-6 md:w-8 h-6 md:h-8 mx-auto mb-2 md:mb-3 ${colorMap[feature.color]} transition-colors duration-300`} />
                   </motion.div>
-                  <h3 className="font-semibold mb-2 text-white group-hover:text-cyan-100 transition-colors duration-300">{feature.title}</h3>
-                  <p className="text-sm text-gray-300 group-hover:text-gray-100 transition-colors duration-300">{feature.desc}</p>
+                  <h3 className="font-semibold mb-1 md:mb-2 text-white group-hover:text-cyan-100 transition-colors duration-300 text-sm md:text-base">{feature.title}</h3>
+                  <p className="text-xs md:text-sm text-gray-300 group-hover:text-gray-100 transition-colors duration-300">{feature.desc}</p>
                 </div>
               </motion.div>
               );

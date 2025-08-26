@@ -24,6 +24,8 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    --ravenkart-primary: 124 58% 60%;
+    --ravenkart-secondary: 217 91% 60%;
   }
  
   .dark {
@@ -46,13 +48,12 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    --ravenkart-primary: 124 58% 60%;
+    --ravenkart-secondary: 217 91% 60%;
   }
 }
  
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
   }
@@ -86,53 +87,9 @@
 }
 
 .glass-effect {
-  position: relative;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-}
-
-.glass-effect::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.4), 
-    transparent
-  );
-  transition: left 0.5s ease;
-}
-
-.glass-effect:hover::before {
-  left: 100%;
-}
-
-.glass-effect::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, 
-    rgba(134, 239, 172, 0.1), 
-    rgba(59, 130, 246, 0.08),
-    rgba(236, 72, 153, 0.1)
-  );
-  animation: glassShimmer 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-/* Floating gradient orb */
-.glass-effect:hover::after {
-  background: linear-gradient(135deg, 
-    rgba(134, 239, 172, 0.2), 
-    rgba(59, 130, 246, 0.15),
-    rgba(236, 72, 153, 0.2)
-  );
-  animation: glassShimmerHover 2s ease-in-out infinite;
 }
 
 @keyframes glassShimmer {

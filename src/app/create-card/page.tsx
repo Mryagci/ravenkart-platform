@@ -45,6 +45,7 @@ interface BusinessCardData {
   socialMedia?: SocialMedia
   projects?: Project[]
   qrCodeType?: 'full' | 'limited'
+  qrRedirectUrl?: string
 }
 
 export default function CreateCard() {
@@ -202,10 +203,11 @@ export default function CreateCard() {
         return;
       }
 
-      // Create URL for visitor mode
-      const visitorUrl = `${window.location.origin}/u/${user.id}`;
+      // Önizleme sayfası için geçici QR URL
+      // Gerçek kart kaydedildiğinde /qr/cardId formatında olacak
+      const previewQRUrl = `${window.location.origin}/u/${user.id}`;
 
-      const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
+      const qrDataUrl = await QRCode.toDataURL(previewQRUrl, {
         width: 200,
         margin: 1,
         color: {
@@ -358,13 +360,13 @@ END:VCARD`;
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg"
+          className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg"
         >
           ✅ Kartvizit başarıyla kaydedildi!
         </motion.div>
       )}
       
-      <div className="pt-20 pb-10 px-4">
+      <div className="pt-16 pb-10 px-4">
         <div className="container mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -751,6 +753,43 @@ END:VCARD`;
                       </select>
                     </div>
 
+                    {/* QR Redirect URL Management */}
+                    <div className="space-y-3 mb-4 p-4 bg-white/5 rounded-lg border border-white/20">
+                      <label className="text-white/80 text-sm font-medium block">
+                        QR Kod Yönlendirme URL'i
+                      </label>
+                      <p className="text-white/50 text-xs">
+                        QR kod tarandığında kullanıcıların yönlendirilmesini istediğiniz URL. 
+                        Boş bırakırsanız kartvizit sayfanız gösterilir.
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="url"
+                          value={cardData.qrRedirectUrl || ''}
+                          onChange={(e) => handleInputChange('qrRedirectUrl', e.target.value)}
+                          placeholder="https://example.com veya boş bırakın"
+                          className="px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-sm focus:outline-none focus:border-white/60 placeholder-white/40"
+                        />
+                        <div className="flex gap-2 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => handleInputChange('qrRedirectUrl', '')}
+                            className="px-2 py-1 bg-white/10 text-white/70 rounded hover:bg-white/20 transition-colors"
+                          >
+                            Temizle
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleInputChange('qrRedirectUrl', cardData.website || '')}
+                            className="px-2 py-1 bg-white/10 text-white/70 rounded hover:bg-white/20 transition-colors"
+                            disabled={!cardData.website}
+                          >
+                            Website Kullan
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* LinkedIn */}
                       <div className="flex items-center gap-2">
@@ -842,49 +881,53 @@ END:VCARD`;
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap gap-4 pt-4 border-t border-white/20">
+                <div className="flex flex-col gap-3 pt-4 border-t border-white/20">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSave}
                     disabled={saving || !cardData.name.trim()}
-                    className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-2xl shadow-2xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all duration-300 hover:scale-105"
+                    className="group relative px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl md:rounded-2xl shadow-2xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all duration-300 hover:scale-105 w-full"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Save className="w-5 h-5" />
+                    <span className="relative z-10 flex items-center justify-center gap-2 text-sm md:text-base">
+                      <Save className="w-4 md:w-5 h-4 md:h-5" />
                       {saving ? 'Kaydediliyor...' : 'Kaydet'}
                     </span>
                   </motion.button>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={exportVCF}
-                    disabled={!cardData.name}
-                    className="group relative px-8 py-4 bg-transparent border-2 border-white/30 text-white font-semibold rounded-2xl backdrop-blur-sm hover:border-white/60 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden hover:scale-105"
-                  >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Download className="w-5 h-5" />
-                      Kişilere Ekle (.vcf)
-                    </span>
-                  </motion.button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={exportVCF}
+                      disabled={!cardData.name}
+                      className="group relative px-4 md:px-6 py-3 bg-transparent border-2 border-white/30 text-white font-semibold rounded-xl md:rounded-2xl backdrop-blur-sm hover:border-white/60 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden hover:scale-105"
+                    >
+                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <span className="relative z-10 flex items-center justify-center gap-2 text-xs md:text-sm">
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Kişilere Ekle</span>
+                        <span className="sm:hidden">VCF</span>
+                      </span>
+                    </motion.button>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={addToHomeScreen}
-                    disabled={!cardData.name}
-                    className="group relative px-8 py-4 bg-transparent border-2 border-white/30 text-white font-semibold rounded-2xl backdrop-blur-sm hover:border-white/60 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden hover:scale-105"
-                  >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Home className="w-5 h-5" />
-                      Ana Ekrana Ekle
-                    </span>
-                  </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={addToHomeScreen}
+                      disabled={!cardData.name}
+                      className="group relative px-4 md:px-6 py-3 bg-transparent border-2 border-white/30 text-white font-semibold rounded-xl md:rounded-2xl backdrop-blur-sm hover:border-white/60 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden hover:scale-105"
+                    >
+                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <span className="relative z-10 flex items-center justify-center gap-2 text-xs md:text-sm">
+                        <Home className="w-4 h-4" />
+                        <span className="hidden sm:inline">Ana Ekrana Ekle</span>
+                        <span className="sm:hidden">Ekle</span>
+                      </span>
+                    </motion.button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -896,7 +939,7 @@ END:VCARD`;
                 <p className="text-white/70">Kartvizitinizin nasıl görüneceğini inceleyin</p>
               </div>
 
-              <div className="sticky top-24">
+              <div className="sticky top-20">
                 {/* Desktop Preview */}
                 <div className="hidden md:block">
                   <motion.div

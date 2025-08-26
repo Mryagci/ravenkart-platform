@@ -399,7 +399,7 @@ END:VCARD`
         </motion.div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mt-6">
+        <div className="flex flex-col sm:flex-row gap-3 mt-6">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -422,11 +422,11 @@ END:VCARD`
         </div>
 
         {/* Create Your Own */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-6">
           <a 
             href="/"
             target="_blank"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl hover:scale-105 transition-transform"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl hover:scale-105 transition-transform w-full sm:w-auto"
           >
             Sen de Kartvizitini Oluştur
           </a>

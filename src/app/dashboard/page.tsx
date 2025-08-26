@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle } from 'lucide-react'
+import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3 } from 'lucide-react'
 import Navbar from '@/components/layout/navbar'
 import QRCode from 'qrcode'
+import QRAnalyticsDashboard from '@/components/analytics/qr-analytics-dashboard'
 
 interface BusinessCard {
   id: string
@@ -357,22 +358,41 @@ export default function Dashboard() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex justify-center px-4">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => router.push('/create-card')}
-                  className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-2xl shadow-2xl overflow-hidden"
+                  className="group relative px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl md:rounded-2xl shadow-2xl overflow-hidden w-full max-w-sm"
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                  <span className="relative z-10 flex items-center gap-2 text-lg">
-                    <Edit3 className="w-5 h-5" />
+                  <span className="relative z-10 flex items-center justify-center gap-2 text-base md:text-lg">
+                    <Edit3 className="w-4 md:w-5 h-4 md:h-5" />
                     Kartviziti Düzenle
                   </span>
                 </motion.button>
               </div>
+
+              {/* QR Analytics Dashboard */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="mt-8 px-4"
+              >
+                <div className="mb-6 text-center">
+                  <h2 className="text-2xl font-semibold text-white flex items-center justify-center gap-2 mb-2">
+                    <BarChart3 className="w-6 h-6" />
+                    QR Kod Analitik
+                  </h2>
+                  <p className="text-white/60 text-sm">
+                    QR kodunuzun tarama istatistiklerini takip edin
+                  </p>
+                </div>
+                <QRAnalyticsDashboard cardId={businessCard.id} />
+              </motion.div>
             </motion.div>
           ) : (
             // No business card exists

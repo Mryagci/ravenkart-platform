@@ -105,15 +105,6 @@ export default function CTASection() {
               Ücretsiz Başlayın
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
-            
-            <Button
-              size="xl"
-              variant="outline"
-              onClick={() => router.push('/auth?mode=login')}
-              className="border-2 border-white/20 text-white hover:bg-white hover:text-gray-900 transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4"
-            >
-              Giriş Yap
-            </Button>
           </motion.div>
 
           {/* Features list */}
