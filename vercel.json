@@ -1,3 +1,7 @@
 {
   "functions": {
-    "src/app/api/**": { 
+    "api/**": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
