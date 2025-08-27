@@ -314,4 +314,11 @@
 
 .gradient-bg {
   background: linear-gradient(135deg, #111827 0%, #7c3aed 25%, #ec4899 50%, #3730a3 75%, #111827 100%);
+  min-height: 100vh;
+}
+
+/* Backup gradient class */
+.bg-gradient {
+  background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 25%, #ec4899 50%, #3730a3 75%, #1e1b4b 100%);
+  min-height: 100vh;
 }

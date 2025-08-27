@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import QRCode from 'qrcode'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { QrCode, Phone, Mail, Globe, MapPin, User, Building, Save, ArrowLeft, Upload, Download, Home, Settings, Instagram, Linkedin, Twitter, Youtube, Facebook, MessageCircle, Send, Camera, Share2, Trash2, Plus, X, Edit } from 'lucide-react'
+import { QrCode, Phone, Mail, Globe, MapPin, User, Building, Save, ArrowLeft, Upload, Download, Home, Settings, Instagram, Linkedin, Twitter, Youtube, Facebook, MessageCircle, Send, Camera, Share2, Trash2, Plus, X, Edit, CreditCard } from 'lucide-react'
 import Navbar from '@/components/layout/navbar'
 
 interface SocialMedia {
@@ -26,6 +26,9 @@ interface Project {
   title: string
   description: string
   image?: string
+  fileName?: string
+  fileType?: string
+  fileSize?: number
 }
 
 interface BusinessCardData {
@@ -37,6 +40,7 @@ interface BusinessCardData {
   email: string
   website: string
   location: string
+  iban?: string
   profilePhotos?: string[]
   backgroundColor?: string
   ribbonPrimaryColor?: string
@@ -65,6 +69,7 @@ export default function CreateCard() {
     email: '',
     website: '',
     location: '',
+    iban: '',
     profilePhotos: [],
     backgroundColor: '#ffffff',
     ribbonPrimaryColor: '#8b5cf6',
@@ -124,10 +129,41 @@ export default function CreateCard() {
     }
   }
 
+  const formatIBAN = (value: string): string => {
+    // Remove all non-alphanumeric characters
+    let cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    
+    // Ensure it starts with TR
+    if (cleaned.length > 0 && !cleaned.startsWith('TR')) {
+      cleaned = 'TR' + cleaned.replace(/^TR/i, '');
+    }
+    
+    // Limit to 26 characters (TR + 24 digits)
+    cleaned = cleaned.substring(0, 26);
+    
+    // Format with spaces every 4 characters after TR
+    if (cleaned.length <= 2) {
+      return cleaned;
+    }
+    
+    const tr = cleaned.substring(0, 2);
+    const digits = cleaned.substring(2);
+    const formatted = digits.match(/.{1,4}/g)?.join(' ') || digits;
+    
+    return tr + (digits.length > 0 ? ' ' + formatted : '');
+  };
+
   const handleInputChange = (field: keyof BusinessCardData, value: string) => {
+    let processedValue = value;
+    
+    // Apply IBAN formatting for IBAN field
+    if (field === 'iban') {
+      processedValue = formatIBAN(value);
+    }
+    
     setCardData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   }
 
@@ -242,7 +278,8 @@ export default function CreateCard() {
       phone: cardData.phone,
       email: cardData.email,
       website: cardData.website,
-      location: cardData.location
+      location: cardData.location,
+      iban: cardData.iban
     });
     
     // Show success message
@@ -294,6 +331,56 @@ export default function CreateCard() {
     }));
   }
 
+  const addProject = () => {
+    const newProject: Project = {
+      id: Date.now().toString(),
+      title: '',
+      description: ''
+    };
+    setCardData(prev => ({
+      ...prev,
+      projects: [...(prev.projects || []), newProject]
+    }));
+  }
+
+  const updateProject = (id: string, field: keyof Project, value: string) => {
+    setCardData(prev => ({
+      ...prev,
+      projects: prev.projects?.map(project => 
+        project.id === id ? { ...project, [field]: value } : project
+      ) || []
+    }));
+  }
+
+  const removeProject = (id: string) => {
+    setCardData(prev => ({
+      ...prev,
+      projects: prev.projects?.filter(project => project.id !== id) || []
+    }));
+  }
+
+  const handleProjectFileUpload = (projectId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (10MB limit for all file types)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Dosya boyutu 10MB\'dan küçük olmalıdır.');
+      return;
+    }
+
+    // Support all file types
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      updateProject(projectId, 'image', base64);
+      updateProject(projectId, 'fileName', file.name);
+      updateProject(projectId, 'fileType', file.type);
+      updateProject(projectId, 'fileSize', file.size);
+    };
+    reader.readAsDataURL(file);
+  }
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -302,39 +389,46 @@ export default function CreateCard() {
         alert('Lütfen ad soyad giriniz.');
         return;
       }
+      
+      // Auth kontrolü
+      if (!user) {
+        alert('Lütfen önce giriş yapın.');
+        router.push('/auth?mode=login');
+        return;
+      }
 
       const cardId = Date.now().toString();
       const businessCardData = {
         ...cardData,
-        id: cardId,
-        user_id: user?.id,
         username: cardData.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''),
         created_at: new Date().toISOString()
       };
 
-      // Generate QR code via API
-      const response = await fetch('/api/qr-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      // Geçici çözüm: QR kodu client-side oluştur
+      const tempCardId = `temp-${Date.now()}`;
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const qrUrl = `${baseUrl}/v/${tempCardId}`;
+      
+      // QR kod oluştur
+      const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        quality: 0.92,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
         },
-        body: JSON.stringify({
-          cardId,
-          cardData: businessCardData
-        })
+        width: 256
       });
-
-      if (!response.ok) {
-        throw new Error('QR kod oluşturma başarısız');
-      }
-
-      const result = await response.json();
       
       // Save to localStorage with QR data
       const finalCardData = {
         ...businessCardData,
-        qr_code_url: result.qrCodeUrl,
-        qr_code_data: result.qrCodeData
+        id: tempCardId,
+        user_id: user.id,
+        qr_code_url: qrUrl,
+        qr_code_data: qrCodeDataUrl
       };
       
       localStorage.setItem('business_card', JSON.stringify(finalCardData));
@@ -743,6 +837,25 @@ export default function CreateCard() {
                   />
                 </div>
 
+                {/* IBAN */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">
+                    <CreditCard className="w-4 h-4 inline mr-2" />
+                    IBAN Numarası
+                  </label>
+                  <input
+                    type="text"
+                    value={cardData.iban}
+                    onChange={(e) => handleInputChange('iban', e.target.value)}
+                    placeholder="TR00 0000 0000 0000 0000 0000 00"
+                    maxLength={32}
+                    className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-white/60 transition-colors font-mono"
+                  />
+                  <p className="text-white/50 text-xs mt-1">
+                    Türkiye IBAN formatı: TR ile başlayan 26 haneli numara
+                  </p>
+                </div>
+
                 {/* Social Media Section */}
                 <div>
                   <label className="block text-white/80 text-sm font-medium mb-4">
@@ -888,6 +1001,117 @@ export default function CreateCard() {
                         Sosyal medya hesaplarını herkese göster
                       </label>
                     </div>
+                  </div>
+                </div>
+
+                {/* Projects Section */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-4">
+                    <Building className="w-4 h-4 inline mr-2" />
+                    Projeler & Ürünler
+                  </label>
+                  
+                  <div className="space-y-4">
+                    {/* Existing Projects */}
+                    {cardData.projects && cardData.projects.length > 0 && (
+                      <div className="space-y-3">
+                        {cardData.projects.map((project, index) => (
+                          <motion.div
+                            key={project.id}
+                            className="p-4 bg-white/5 rounded-lg border border-white/20"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <span className="text-white/60 text-xs">Proje #{index + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeProject(project.id)}
+                                className="text-red-400 hover:text-red-300 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <input
+                                type="text"
+                                placeholder="Proje adı (örn: E-ticaret Web Sitesi)"
+                                value={project.title}
+                                onChange={(e) => updateProject(project.id, 'title', e.target.value)}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/60"
+                              />
+                              <textarea
+                                placeholder="Proje açıklaması (örn: Modern, kullanıcı dostu e-ticaret platformu)"
+                                value={project.description}
+                                onChange={(e) => updateProject(project.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/60 resize-none"
+                              />
+                              
+                              {/* Project Image Upload */}
+                              <div>
+                                <label className="block text-white/60 text-xs mb-2">Proje Görseli</label>
+                                <div className="flex items-center gap-3">
+                                  {project.image && (
+                                    <div className="w-16 h-16 rounded-lg border border-white/20 overflow-hidden bg-white/5">
+                                      <img 
+                                        src={project.image} 
+                                        alt="Project" 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <input
+                                      type="file"
+                                      id={`project-file-${project.id}`}
+                                      accept="*/*"
+                                      onChange={(e) => handleProjectFileUpload(project.id, e)}
+                                      className="hidden"
+                                    />
+                                    <label
+                                      htmlFor={`project-file-${project.id}`}
+                                      className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/30 text-white/70 rounded-lg hover:bg-white/20 transition-colors text-sm"
+                                    >
+                                      <Upload className="w-4 h-4" />
+                                      {project.image ? 'Dosyayı Değiştir' : 'Dosya Yükle'}
+                                    </label>
+                                    {project.image && (
+                                      <button
+                                        type="button"
+                                        onClick={() => updateProject(project.id, 'image', '')}
+                                        className="ml-2 text-red-400 hover:text-red-300 text-sm"
+                                      >
+                                        Kaldır
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-white/40 text-xs mt-1">JPG, PNG - Max 5MB</p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add Project Button */}
+                    <motion.button
+                      type="button"
+                      onClick={addProject}
+                      className="w-full py-3 border-2 border-dashed border-white/30 rounded-lg text-white/60 hover:text-white hover:border-white/50 transition-all duration-300 flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Proje Ekle</span>
+                    </motion.button>
+
+                    <p className="text-white/50 text-xs mt-2">
+                      💡 Projelerinizi ve çalışmalarınızı kartvizitinizde sergileyerek profesyonel imajınızı güçlendirin
+                    </p>
                   </div>
                 </div>
 
@@ -1062,6 +1286,12 @@ export default function CreateCard() {
                               <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>
                                 <MapPin className="w-4 h-4" />
                                 <span className="text-sm">{cardData.location}</span>
+                              </div>
+                            )}
+                            {cardData.iban && (
+                              <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>
+                                <CreditCard className="w-4 h-4" />
+                                <span className="text-xs font-mono">{cardData.iban}</span>
                               </div>
                             )}
                           </div>

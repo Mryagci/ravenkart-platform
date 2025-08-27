@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3, Download, Share2, Camera, UserPlus, Home, Smartphone, Scan, Grid, ChevronDown } from 'lucide-react'
+import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3, Download, Share2, Camera, UserPlus, Home, Smartphone, Scan, Grid, ChevronDown, CreditCard } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ interface BusinessCard {
   email: string
   website: string
   location: string
+  iban?: string
   profilePhotos?: string[]
   backgroundColor?: string
   ribbonPrimaryColor?: string
@@ -55,6 +56,7 @@ TEL:${businessCard.phone}
 EMAIL:${businessCard.email}
 URL:${businessCard.website}
 ADR:;;${businessCard.location};;;;
+${businessCard.iban ? `NOTE:IBAN: ${businessCard.iban}` : ''}
 END:VCARD`
 
     const blob = new Blob([vcfData], { type: 'text/vcard' })
@@ -430,6 +432,12 @@ END:VCARD`
                         <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
                           <MapPin className="w-4 h-4" />
                           <span className="text-sm">{businessCard.location}</span>
+                        </div>
+                      )}
+                      {businessCard.iban && (
+                        <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
+                          <CreditCard className="w-4 h-4" />
+                          <span className="text-sm font-mono">{businessCard.iban}</span>
                         </div>
                       )}
                     </div>

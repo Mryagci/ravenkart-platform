@@ -6,6 +6,7 @@ interface ContactData {
   email?: string
   website?: string
   location?: string
+  iban?: string
 }
 
 export function generateVCF(data: ContactData): string {
@@ -18,6 +19,7 @@ ${data.phone ? `TEL:${data.phone}` : ''}
 ${data.email ? `EMAIL:${data.email}` : ''}
 ${data.website ? `URL:${data.website}` : ''}
 ${data.location ? `ADR:;;;${data.location};;;` : ''}
+${data.iban ? `NOTE:IBAN: ${data.iban}` : ''}
 NOTE:RAVENKART ile oluşturuldu - https://ravenkart.com
 END:VCARD`
 
