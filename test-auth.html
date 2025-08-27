@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Ravenkart Auth Test</h1>
+    <div id="status">Checking...</div>
+    <button onclick="login()">Login</button>
+    <button onclick="logout()">Logout</button>
+    <button onclick="testQR()">Test QR Save</button>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js'
+        
+        const supabase = createClient(
+            'https://atozlshaxxxfgkclvjdd.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0b3psc2hheHh4ZmdrY2x2amRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MDEwODksImV4cCI6MjA3MTM3NzA4OX0.txY6HQnCsNO3F0ggqGRjw9LsK5baHG8Ch7L0GnktyOc'
+        )
+        
+        window.supabase = supabase
+        
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser()
+            document.getElementById('status').innerHTML = user ? 
+                `Logged in as: ${user.email}` : 
+                'Not logged in'
+            return user
+        }
+        
+        window.login = async function() {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: 'erkinyagci@hotmail.com',
+                password: 'test123'
+            })
+            if (error) {
+                alert('Login error: ' + error.message)
+                console.error(error)
+            } else {
+                console.log('Login successful', data)
+                checkAuth()
+            }
+        }
+        
+        window.logout = async function() {
+            await supabase.auth.signOut()
+            checkAuth()
+        }
+        
+        window.testQR = async function() {
+            const user = await checkAuth()
+            if (!user) {
+                alert('Please login first')
+                return
+            }
+            
+            const response = await fetch('/api/qr-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cardId: Date.now().toString(),
+                    cardData: {
+                        name: "Test User",
+                        username: "testuser123",
+                        title: "Developer"
+                    }
+                })
+            })
+            
+            const result = await response.json()
+            console.log('QR API Result:', result)
+            
+            if (response.ok) {
+                alert('QR code saved successfully!')
+            } else {
+                alert('Error: ' + (result.error || 'Unknown error'))
+            }
+        }
+        
+        checkAuth()
+    </script>
+</body>
+</html>
