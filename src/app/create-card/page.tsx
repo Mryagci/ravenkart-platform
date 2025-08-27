@@ -233,27 +233,17 @@ export default function CreateCard() {
       return;
     }
 
-    const vcf = `BEGIN:VCARD
-VERSION:3.0
-FN:${cardData.name}
-ORG:${cardData.company}
-TITLE:${cardData.title}
-TEL:${cardData.phone}
-EMAIL:${cardData.email}
-URL:${cardData.website}
-ADR:;;;${cardData.location};;;
-NOTE:RAVENKART ile oluşturuldu - https://ravenkart.com
-END:VCARD`;
+    const { downloadVCF } = require('@/lib/vcf-utils');
     
-    const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${cardData.name.replace(/[^a-zA-Z0-9]/g, '_')}.vcf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadVCF({
+      name: cardData.name,
+      company: cardData.company,
+      title: cardData.title,
+      phone: cardData.phone,
+      email: cardData.email,
+      website: cardData.website,
+      location: cardData.location
+    });
     
     // Show success message
     alert('VCF dosyası başarıyla indirildi!');
@@ -305,39 +295,60 @@ END:VCARD`;
   }
 
   const handleSave = async () => {
-    console.log('handleSave called');
-    console.log('Current cardData:', cardData);
-    console.log('User:', user);
-    console.log('Is localStorage available:', typeof Storage !== 'undefined');
     try {
       setSaving(true);
       
-      // Save to localStorage for demo (in real app, save to database)
+      if (!cardData.name.trim()) {
+        alert('Lütfen ad soyad giriniz.');
+        return;
+      }
+
+      const cardId = Date.now().toString();
       const businessCardData = {
         ...cardData,
-        id: Date.now().toString(),
+        id: cardId,
         user_id: user?.id,
+        username: cardData.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''),
         created_at: new Date().toISOString()
       };
+
+      // Generate QR code via API
+      const response = await fetch('/api/qr-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cardId,
+          cardData: businessCardData
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('QR kod oluşturma başarısız');
+      }
+
+      const result = await response.json();
       
-      console.log('Saving businessCardData:', businessCardData);
-      localStorage.setItem('business_card', JSON.stringify(businessCardData));
-      console.log('Saved to localStorage successfully');
+      // Save to localStorage with QR data
+      const finalCardData = {
+        ...businessCardData,
+        qr_code_url: result.qrCodeUrl,
+        qr_code_data: result.qrCodeData
+      };
       
-      // Simulate save delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      localStorage.setItem('business_card', JSON.stringify(finalCardData));
       
       // Show success message
-      console.log('Setting save success to true');
       setSaveSuccess(true);
       setTimeout(() => {
-        console.log('Hiding success message and redirecting');
         setSaveSuccess(false);
-        router.push('/');
+        router.push('/dashboard');
       }, 2000);
       
     } catch (error) {
       console.error('Error saving card:', error);
+      alert('Kartvizit kaydedilirken bir hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
     } finally {
       setSaving(false);
     }
@@ -381,7 +392,7 @@ END:VCARD`;
                 <p className="text-white/70">Kartvizitinizde görünecek bilgileri girin</p>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 space-y-6">
+              <div className="glass-card p-6 space-y-6">
                 {/* Profile Photos Management */}
                 <div>
                   <label className="block text-white/80 text-sm font-medium mb-4">
@@ -943,7 +954,7 @@ END:VCARD`;
                 {/* Desktop Preview */}
                 <div className="hidden md:block">
                   <motion.div
-                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
+                    className="glass-card p-6"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
@@ -1189,7 +1200,7 @@ END:VCARD`;
                 {/* Mobile Preview */}
                 <div className="md:hidden">
                   <motion.div
-                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20"
+                    className="glass-card p-4"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}

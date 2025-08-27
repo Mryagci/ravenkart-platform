@@ -100,7 +100,7 @@ export default function CTASection() {
             <Button
               size="xl"
               onClick={() => router.push('/auth?mode=register')}
-              className="group bg-gradient-to-r from-ravenkart-primary to-ravenkart-secondary hover:shadow-2xl hover:shadow-ravenkart-primary/25 transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4"
+              className="btn-primary group text-lg px-8 py-4 transform hover:scale-105 transition-all duration-300"
             >
               Ücretsiz Başlayın
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -126,7 +126,7 @@ export default function CTASection() {
                 whileHover={{ y: -5 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
+                <div className="glass-card p-4">
                   <p className="text-white/90 font-medium">{feature}</p>
                 </div>
               </motion.div>

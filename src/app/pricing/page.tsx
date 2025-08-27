@@ -152,7 +152,7 @@ export default function Pricing() {
 
             {/* Billing Toggle */}
             <div className="flex items-center justify-center mb-8 md:mb-12">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-1.5 md:p-2 border border-white/20">
+              <div className="glass-card p-1.5 md:p-2">
                 <div className="flex items-center gap-2 md:gap-4">
                   <button
                     onClick={() => setBillingCycle('monthly')}
@@ -190,7 +190,7 @@ export default function Pricing() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 }}
-                className={`relative bg-white/10 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-white/20 p-4 md:p-8 ${
+                className={`glass-card p-4 md:p-8 ${
                   plan.popular ? 'ring-2 ring-cyan-400/50 shadow-2xl shadow-cyan-400/25' : ''
                 }`}
               >
@@ -246,8 +246,8 @@ export default function Pricing() {
                   onClick={() => handleSubscribe(plan)}
                   className={`w-full py-3 md:py-4 rounded-xl md:rounded-2xl font-semibold text-white transition-all duration-300 text-sm md:text-base ${
                     plan.popular
-                      ? 'bg-gradient-to-r from-cyan-400 to-orange-400 hover:shadow-lg hover:shadow-cyan-400/25'
-                      : 'bg-white/20 hover:bg-white/30 border border-white/30'
+                      ? 'btn-primary'
+                      : 'btn-secondary'
                   }`}
                 >
                   {user ? 'Planı Seç' : 'Ücretsiz Başla'}
@@ -265,7 +265,7 @@ export default function Pricing() {
           >
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8">Sıkça Sorulan Sorular</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+              <div className="glass-card p-4 md:p-6">
                 <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   Ücretsiz deneme süresi var mı?
                 </h3>
@@ -274,7 +274,7 @@ export default function Pricing() {
                   Kredi kartı bilgisi gerekmez.
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+              <div className="glass-card p-4 md:p-6">
                 <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   İstediğim zaman iptal edebilir miyim?
                 </h3>
@@ -283,7 +283,7 @@ export default function Pricing() {
                   Gizli ücret veya ceza yoktur.
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+              <div className="glass-card p-4 md:p-6">
                 <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   QR kodları gerçekten çalışıyor mu?
                 </h3>
@@ -292,7 +292,7 @@ export default function Pricing() {
                   ve tüm modern cihazlarda çalışır.
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/20">
+              <div className="glass-card p-4 md:p-6">
                 <h3 className="text-base md:text-lg font-semibold text-white mb-2 md:mb-3">
                   Takım planında kaç kişi olabilir?
                 </h3>

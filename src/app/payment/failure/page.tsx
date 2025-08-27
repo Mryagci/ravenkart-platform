@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { XCircle, ArrowLeft, RefreshCw, HelpCircle } from 'lucide-react'
 import Navbar from '@/components/layout/navbar'
 
-export default function PaymentFailure() {
+function PaymentFailureContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [countdown, setCountdown] = useState(10)
@@ -168,5 +168,17 @@ export default function PaymentFailure() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function PaymentFailure() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="text-white text-xl">Yükleniyor...</div>
+      </div>
+    }>
+      <PaymentFailureContent />
+    </Suspense>
   )
 }

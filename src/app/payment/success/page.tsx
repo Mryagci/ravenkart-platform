@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, ArrowRight, Sparkles } from 'lucide-react'
 import Navbar from '@/components/layout/navbar'
 
-export default function PaymentSuccess() {
+function PaymentSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [countdown, setCountdown] = useState(5)
@@ -159,5 +159,17 @@ export default function PaymentSuccess() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function PaymentSuccess() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="text-white text-xl">Yükleniyor...</div>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }

@@ -3,7 +3,14 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3 } from 'lucide-react'
+import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3, Download, Share2, Camera, UserPlus, Home, Smartphone, Scan, Grid, ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import Navbar from '@/components/layout/navbar'
 import QRCode from 'qrcode'
 import QRAnalyticsDashboard from '@/components/analytics/qr-analytics-dashboard'
@@ -34,6 +41,131 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [qrCodeUrl, setQrCodeUrl] = useState('')
+  
+  // VCF Export Function
+  const generateVCF = () => {
+    if (!businessCard) return
+
+    const vcfData = `BEGIN:VCARD
+VERSION:3.0
+FN:${businessCard.name}
+ORG:${businessCard.company}
+TITLE:${businessCard.title}
+TEL:${businessCard.phone}
+EMAIL:${businessCard.email}
+URL:${businessCard.website}
+ADR:;;${businessCard.location};;;;
+END:VCARD`
+
+    const blob = new Blob([vcfData], { type: 'text/vcard' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${businessCard.name.replace(/\s+/g, '_')}.vcf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
+  // Add to Home Screen Function  
+  const addToHomeScreen = async () => {
+    if (!businessCard) return
+
+    try {
+      // Create a simple HTML page for the shortcut
+      const shortcutData = {
+        name: businessCard.name,
+        short_name: businessCard.name,
+        start_url: `${window.location.origin}/u/${user?.id}`,
+        display: 'standalone',
+        background_color: businessCard.backgroundColor || '#ffffff',
+        theme_color: businessCard.ribbonPrimaryColor || '#8b5cf6',
+        icons: [
+          {
+            src: businessCard.profilePhotos?.[0] || '/favicon.ico',
+            sizes: '192x192',
+            type: 'image/png'
+          }
+        ]
+      }
+
+      // Create and download manifest file
+      const manifestBlob = new Blob([JSON.stringify(shortcutData, null, 2)], { 
+        type: 'application/json' 
+      })
+      const manifestUrl = window.URL.createObjectURL(manifestBlob)
+      
+      // For iOS Safari, show instructions
+      if (/iPhone|iPad|iPod|Safari/i.test(navigator.userAgent)) {
+        alert(`${businessCard.name} kişisini ana ekranınıza eklemek için:\n\n1. Bu sayfayı Safari'de açın\n2. Paylaş düğmesine basın\n3. "Ana Ekrana Ekle" seçin`)
+      } else {
+        // For other browsers, try PWA install
+        const link = document.createElement('a')
+        link.href = `${window.location.origin}/u/${user?.id}`
+        link.target = '_blank'
+        link.click()
+      }
+
+    } catch (error) {
+      console.error('Ana ekrana ekleme hatası:', error)
+      alert('Ana ekrana eklenirken bir hata oluştu')
+    }
+  }
+
+  // Save as Image Function
+  const saveAsImage = async () => {
+    if (!businessCard) return
+
+    try {
+      // Find the business card element (only the visible card, not buttons)
+      const cardElement = document.getElementById('business-card')
+      if (!cardElement) {
+        alert('Kartvizit elementi bulunamadı')
+        return
+      }
+
+      // Use html2canvas library
+      const html2canvas = (await import('html2canvas')).default
+      
+      console.log('Kartvizit fotoğrafı çekiliyor...')
+      
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: businessCard.backgroundColor || '#ffffff',
+        scale: 2, // High resolution
+        useCORS: true,
+        allowTaint: false,
+        height: cardElement.offsetHeight,
+        width: cardElement.offsetWidth,
+        scrollX: 0,
+        scrollY: 0
+      })
+
+      console.log('Canvas oluşturuldu, resim kaydediliyor...')
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${businessCard.name.replace(/\s+/g, '_')}_kartvizit.png`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+          
+          console.log('Kartvizit resmi başarıyla kaydedildi!')
+        } else {
+          throw new Error('Blob oluşturulamadı')
+        }
+      }, 'image/png', 0.95)
+
+    } catch (error) {
+      console.error('Resim kaydetme hatası:', error)
+      alert('Resim kaydedilirken bir hata oluştu: ' + (error as Error).message)
+    }
+  }
 
   useEffect(() => {
     checkUserAndCard()
@@ -128,14 +260,76 @@ export default function Dashboard() {
               transition={{ duration: 0.8 }}
               className="space-y-8"
             >
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-white mb-4">Kartvizitim</h1>
-                <p className="text-white/70">Dijital kartvizitinizi görüntüleyin ve düzenleyin</p>
+              {/* Mobile Apps Dropdown - Only on mobile */}
+              <div className="md:hidden mb-6 flex justify-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <motion.button
+                      className="glass-effect px-6 py-3 rounded-2xl text-white font-medium flex items-center gap-2 shadow-lg"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Grid className="w-5 h-5" />
+                      <span>Uygulamalar</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 glass-effect border-white/20 bg-black/80 backdrop-blur-xl">
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/create-card')}
+                      className="text-white hover:bg-white/20 focus:bg-white/20"
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      <span>Kartvizit Düzenle</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/apps/card-scanner')}
+                      className="text-white hover:bg-white/20 focus:bg-white/20"
+                    >
+                      <Scan className="mr-2 h-4 w-4" />
+                      <span>Kart Tarayıcı</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => document.getElementById('analytics')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="text-white hover:bg-white/20 focus:bg-white/20"
+                    >
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      <span>Analitik</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/20" />
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/account')}
+                      className="text-white hover:bg-white/20 focus:bg-white/20"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profil Ayarları</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: businessCard?.name,
+                            text: `${businessCard?.name} - ${businessCard?.title}`,
+                            url: `${window.location.origin}/u/${user?.id}`
+                          });
+                        } else {
+                          navigator.clipboard.writeText(`${window.location.origin}/u/${user?.id}`);
+                          alert('Link panoya kopyalandı!');
+                        }
+                      }}
+                      className="text-white hover:bg-white/20 focus:bg-white/20"
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      <span>Kartviziti Paylaş</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Mobile Business Card Design */}
               <div className="max-w-sm mx-auto">
                 <motion.div
+                  id="business-card"
                   className="rounded-3xl shadow-2xl relative overflow-hidden"
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.3 }}
@@ -358,25 +552,53 @@ export default function Dashboard() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-center px-4">
+              <div className="space-y-4 max-w-sm mx-auto px-4">
+                {/* Kişilere Ekle Button */}
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push('/create-card')}
-                  className="group relative px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl md:rounded-2xl shadow-2xl overflow-hidden w-full max-w-sm"
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={generateVCF}
+                  className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                  <span className="relative z-10 flex items-center justify-center gap-2 text-base md:text-lg">
-                    <Edit3 className="w-4 md:w-5 h-4 md:h-5" />
-                    Kartviziti Düzenle
-                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                  <UserPlus className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Kişilere Ekle</span>
+                </motion.button>
+
+                {/* Ana Ekrana Ekle Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={addToHomeScreen}
+                  className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                  <Smartphone className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Ana Ekrana Ekle</span>
+                </motion.button>
+
+                {/* Resim Olarak Kaydet Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={saveAsImage}
+                  className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-purple-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                  <Download className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Resim Olarak Kaydet</span>
                 </motion.button>
               </div>
 
               {/* QR Analytics Dashboard */}
               <motion.div
+                id="analytics"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
@@ -466,7 +688,7 @@ export default function Dashboard() {
                 ].map((feature, index) => (
                   <motion.div
                     key={feature.title}
-                    className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center border border-white/20"
+                    className="glass-card p-6 text-center"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}

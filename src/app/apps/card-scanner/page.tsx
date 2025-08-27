@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Camera, QrCode, Upload, X, CheckCircle, AlertCircle, Scan, Edit3, Save, Crop, MapPin, Calendar, StickyNote } from 'lucide-react'
 import Navbar from '@/components/layout/navbar'
-import QrScanner from 'qr-scanner'
+// QrScanner will be dynamically imported to avoid SSR issues
 // Google Cloud Vision API will be used via server-side API route
 
 interface ScannedCard {
@@ -36,7 +36,7 @@ export default function CardScannerPage() {
   const [showOCROption, setShowOCROption] = useState(false)
   const [ocrProcessing, setOcrProcessing] = useState(false)
   const [qrMode, setQrMode] = useState(false)
-  const [qrScanner, setQrScanner] = useState<QrScanner | null>(null)
+  const [qrScanner, setQrScanner] = useState<any>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -98,6 +98,12 @@ export default function CardScannerPage() {
       if (videoRef.current) {
         streamRef.current = stream
         videoRef.current.srcObject = stream
+        
+        // Dynamic import to avoid SSR issues
+        const QrScanner = (await import('qr-scanner')).default
+        
+        // Set worker path for QR scanner
+        QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'
         
         const scanner = new QrScanner(videoRef.current, (result: string) => {
           console.log('QR Code scanned:', result)
@@ -387,16 +393,23 @@ export default function CardScannerPage() {
       
       const result = await response.json()
       
+      console.log('=== OCR API RESPONSE ===')
+      console.log('Full result:', JSON.stringify(result))
+      console.log('======================')
+      
       if (result.error) {
+        console.error('OCR API returned error:', result.error)
         throw new Error(result.error)
       }
       
-      console.log('Google Vision OCR Text:', result.text)
+      console.log('OCR Success! Provider:', result.provider)
+      console.log('OCR Text:', result.text)
       console.log('Confidence:', result.confidence)
       
       // Enhanced parsing with confidence scores
       const parsedData = parseBusinessCardTextAdvanced(result.text, { confidence: result.confidence })
       
+      console.log('Parsed card data:', JSON.stringify(parsedData))
       return parsedData
     } catch (error) {
       console.error('Google Vision OCR Error:', error)
