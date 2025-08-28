@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// Supabase client will be created inside the function
 
-// Paytr konfigürasyonu
-const PAYTR_CONFIG = {
-  merchant_id: process.env.PAYTR_MERCHANT_ID!,
-  merchant_key: process.env.PAYTR_MERCHANT_KEY!,
-  merchant_salt: process.env.PAYTR_MERCHANT_SALT!,
-  test_mode: process.env.PAYTR_TEST_MODE === 'true' ? '1' : '0',
-  currency: 'TL'
-}
+// PayTR config will be created inside the function
 
 interface CreateOrderRequest {
   planType: 'personal' | 'professional' | 'enterprise'
@@ -34,6 +25,20 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateOrderRequest = await request.json()
     const { planType, billingCycle, userEmail, userName, userPhone } = body
+
+    // Supabase client oluştur
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // PayTR konfigürasyonu
+    const PAYTR_CONFIG = {
+      merchant_id: process.env.PAYTR_MERCHANT_ID!,
+      merchant_key: process.env.PAYTR_MERCHANT_KEY!,
+      merchant_salt: process.env.PAYTR_MERCHANT_SALT!,
+      test_mode: process.env.PAYTR_TEST_MODE === 'true' ? '1' : '0',
+      currency: 'TL'
+    }
 
     // Kullanıcı doğrulaması
     const authHeader = request.headers.get('Authorization')

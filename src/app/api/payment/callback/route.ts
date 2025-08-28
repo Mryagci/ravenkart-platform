@@ -5,17 +5,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-const PAYTR_CONFIG = {
-  merchant_key: process.env.PAYTR_MERCHANT_KEY!,
-  merchant_salt: process.env.PAYTR_MERCHANT_SALT!
-}
+// Supabase and PayTR config will be created inside functions
 
 export async function POST(request: NextRequest) {
   try {
+    // Supabase client oluştur
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // PayTR config
+    const PAYTR_CONFIG = {
+      merchant_key: process.env.PAYTR_MERCHANT_KEY!,
+      merchant_salt: process.env.PAYTR_MERCHANT_SALT!
+    }
+    
     const formData = await request.formData()
     
     const merchant_oid = formData.get('merchant_oid') as string
