@@ -3,8 +3,14 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Output configuration for Vercel
+  output: 'standalone',
+  
   // Source maps for debugging production builds
   productionBrowserSourceMaps: true,
+  
+  // Trailing slash handling
+  trailingSlash: false,
   
   images: {
     domains: ['supabase.co', 'localhost'],
@@ -32,6 +38,24 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Redirect configuration
+  async redirects() {
+    return []
+  },
+  // Headers configuration
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+    ]
   },
 };
 
