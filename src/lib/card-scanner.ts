@@ -15,13 +15,16 @@ export interface ScannedCardData {
 }
 
 export class CardScannerService {
-  private supabase
+  private supabase: any = null
 
-  constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+  private getSupabase() {
+    if (!this.getSupabase()) {
+      this.getSupabase() = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+    }
+    return this.getSupabase()
   }
 
   /**
@@ -29,13 +32,13 @@ export class CardScannerService {
    */
   async saveScannedCard(cardData: ScannedCardData): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user } } = await this.getSupabase().auth.getUser()
       
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
 
-      const { error } = await this.supabase
+      const { error } = await this.getSupabase()
         .from('scanned_cards')
         .insert({
           ...cardData,
@@ -60,13 +63,13 @@ export class CardScannerService {
    */
   async getScannedCards(): Promise<{ success: boolean; data?: ScannedCardData[]; error?: string }> {
     try {
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user } } = await this.getSupabase().auth.getUser()
       
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
 
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getSupabase()
         .from('scanned_cards')
         .select('*')
         .eq('user_id', user.id)
@@ -89,13 +92,13 @@ export class CardScannerService {
    */
   async deleteScannedCard(cardId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user } } = await this.getSupabase().auth.getUser()
       
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
 
-      const { error } = await this.supabase
+      const { error } = await this.getSupabase()
         .from('scanned_cards')
         .delete()
         .eq('id', cardId)
