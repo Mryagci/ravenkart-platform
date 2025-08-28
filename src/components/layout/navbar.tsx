@@ -199,7 +199,7 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="btn-glass flex items-center gap-2 px-3 py-2 rounded-lg">
+                    <button className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/15 transition-colors">
                       <User className="w-4 h-4 text-white/80" />
                       <div className="flex flex-col items-start">
                         <span className="text-white text-sm font-medium">
@@ -412,7 +412,7 @@ const Navbar = () => {
               <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
                 {user ? (
                   <>
-                    <div className="btn-glass flex items-center gap-2 px-3 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                       <User className="w-4 h-4 text-white/80" />
                       <div>
                         <div className="text-white/90 text-sm font-medium">{getUserName()}</div>
@@ -476,7 +476,7 @@ const Navbar = () => {
                     </button>
                     <button
                       onClick={() => router.push('/auth?mode=register')}
-                      className="btn-primary px-6 py-3 text-white rounded-xl shadow-lg text-center font-medium"
+                      className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-500 transition-all duration-300 shadow-lg text-center"
                     >
                       Kayıt Ol
                     </button>
