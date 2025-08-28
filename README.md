@@ -1,6 +1,6 @@
 # 🚀 Ravenkart - Dijital Kimlik Platformu
 
-NFC/QR destekli modern dijital kartvizit platformu. Next.js 14 ve Supabase ile geliştirilmiştir.
+NFC/QR destekli modern dijital kartvizit platformu. Next.js 14 ve Supabase ile geliştirilmiştir. Çalış be yavrum!!!
 
 ## ✨ Özellikler
 
