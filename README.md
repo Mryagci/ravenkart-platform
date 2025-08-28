@@ -125,4 +125,4 @@ Bu proje MIT lisansı altındadır.
 
 ---
 
-💎 **Ravenkart** ile dijital kimliğinizi oluşturun!
+💎 **Ravenkart** ile dijital kimliğinizi oluşturun!.
