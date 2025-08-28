@@ -3,8 +3,8 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Output configuration for Vercel
-  output: 'standalone',
+  // Remove standalone output for standard Vercel deployment
+  // output: 'standalone',
   
   // Source maps for debugging production builds
   productionBrowserSourceMaps: true,
