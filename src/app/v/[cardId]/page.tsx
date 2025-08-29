@@ -23,7 +23,6 @@ interface BusinessCard {
   website?: string
   address?: string
   iban?: string
-  custom_qr_url?: string
   projects?: any[]
   created_at: string
   user_id: string
@@ -111,15 +110,39 @@ export default function VisitorCardPage() {
     })
   }
 
-  const handleCustomRedirect = () => {
-    if (card?.custom_qr_url) {
-      window.open(card.custom_qr_url, '_blank')
+  const saveScreenshot = async () => {
+    if (!card) return
+    
+    try {
+      // Capture screenshot using html2canvas
+      const html2canvas = (await import('html2canvas')).default
+      const element = document.querySelector('.card-container')
+      
+      if (element) {
+        const canvas = await html2canvas(element as HTMLElement, {
+          backgroundColor: '#f8fafc',
+          scale: 2,
+          logging: false,
+        })
+        
+        // Convert to blob and download
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `kartvizit-${card.name.replace(/\s+/g, '-').toLowerCase()}.png`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Screenshot alınamadı:', error)
+      alert('Görüntü kaydedilemedi')
     }
-  }
-
-  const handleViewCard = () => {
-    // Stay on same page but show full card details
-    window.location.href = `/v/${cardId}?view=full`
   }
 
 
@@ -149,55 +172,13 @@ export default function VisitorCardPage() {
     )
   }
 
-  // Check if custom URL is set and redirect logic
-  const isFullView = new URLSearchParams(window.location.search).get('view') === 'full'
-  
-  if (card.custom_qr_url && !isFullView) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="p-6 text-center">
-            <div className="text-blue-500 text-6xl mb-4">🔗</div>
-            <h1 className="text-xl font-bold text-gray-800 mb-2">Özel Yönlendirme</h1>
-            <p className="text-gray-600 mb-4">
-              {card.name} bu QR kod için özel bir bağlantı ayarlamış.
-            </p>
-            
-            <div className="space-y-3">
-              <Button 
-                onClick={handleCustomRedirect}
-                className="w-full"
-                size="lg"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Özel Sayfaya Git
-              </Button>
-              
-              <Button 
-                onClick={handleViewCard}
-                variant="outline"
-                className="w-full"
-                size="lg"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Kartviziti Görüntüle
-              </Button>
-            </div>
-            
-            <p className="text-xs text-gray-400 mt-4">
-              Ravenkart ile oluşturuldu
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  // Ana kartvizit görünümü
 
   // Main card display
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 py-8">
       <div className="max-w-md mx-auto px-4">
-        <Card className="shadow-xl">
+        <Card className="shadow-xl card-container">
           <CardContent className="p-6">
             {/* Header */}
             <div className="text-center mb-6">
@@ -290,17 +271,15 @@ export default function VisitorCardPage() {
                 Kişilere Ekle
               </Button>
               
-              {card.custom_qr_url && (
-                <Button 
-                  onClick={handleCustomRedirect}
-                  variant="outline"
-                  className="w-full"
-                  size="lg"
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Özel Sayfaya Git
-                </Button>
-              )}
+              <Button 
+                onClick={saveScreenshot}
+                variant="outline"
+                className="w-full"
+                size="lg"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Görüntü Kaydet
+              </Button>
             </div>
             
             <p className="text-xs text-gray-400 text-center mt-6">

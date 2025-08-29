@@ -186,19 +186,40 @@ END:VCARD`
         return;
       }
 
-      // Create URL for visitor mode
-      const visitorUrl = `${window.location.origin}/u/${user.id}`;
+      console.log('🔗 Dashboard QR kod oluşturuluyor:', businessCard.id);
+
+      // Önce localStorage'dan QR kodunu kontrol et
+      const savedQR = localStorage.getItem(`qr_code_${businessCard.id}`);
+      if (savedQR) {
+        const qrData = JSON.parse(savedQR);
+        setQrCodeUrl(qrData.qrCodeDataUrl);
+        console.log('✅ QR kod localStorage\'dan yüklendi');
+        return;
+      }
+
+      // QR kod oluştur - visitor sayfasına yönlendiren
+      const visitorUrl = `${window.location.origin}/v/${businessCard.id}`;
 
       const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
         width: 200,
-        margin: 1,
+        margin: 2,
         color: {
           dark: businessCard.textColor || '#000000',
           light: '#FFFFFF',
         },
+        errorCorrectionLevel: 'M'
       });
 
       setQrCodeUrl(qrDataUrl);
+      console.log('✅ QR kod oluşturuldu:', visitorUrl);
+
+      // QR kodunu localStorage'a kaydet
+      localStorage.setItem(`qr_code_${businessCard.id}`, JSON.stringify({
+        cardId: businessCard.id,
+        qrCodeDataUrl: qrDataUrl,
+        visitorUrl: visitorUrl,
+        createdAt: new Date().toISOString()
+      }));
     } catch (error) {
       console.error('QR kod oluşturma hatası:', error);
     }

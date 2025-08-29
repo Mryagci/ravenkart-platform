@@ -239,11 +239,8 @@ export default function CreateCard() {
         return;
       }
 
-      // Preview QR code - will show visitor page URL format
-      // When card is saved, it will use the actual card ID
-      const previewUrl = cardData.qrRedirectUrl && cardData.qrRedirectUrl.trim() 
-        ? cardData.qrRedirectUrl.trim()
-        : `${window.location.origin}/v/preview-${Date.now()}`;
+      // Preview QR code - will show visitor page URL format  
+      const previewUrl = `${window.location.origin}/v/preview-${Date.now()}`;
 
       const qrDataUrl = await QRCode.toDataURL(previewUrl, {
         width: 200,
@@ -265,7 +262,7 @@ export default function CreateCard() {
   // Generate QR code when card data changes
   useEffect(() => {
     generateQRCode();
-  }, [cardData.name, cardData.textColor, cardData.qrRedirectUrl]);
+  }, [cardData.name, cardData.textColor]);
 
   const exportVCF = () => {
     if (!cardData.name) {
@@ -385,6 +382,44 @@ export default function CreateCard() {
     reader.readAsDataURL(file);
   }
 
+  const createAndSaveQRCode = async (cardId: string, cardData: BusinessCardData) => {
+    try {
+      console.log('🔗 QR kod oluşturuluyor...', cardId);
+      
+      // QR kod direkt burada oluştur
+      const QRCode = (await import('qrcode')).default;
+      
+      // Visitor sayfası URL'ini oluştur
+      const visitorUrl = `${window.location.origin}/v/${cardId}`;
+      
+      // QR kod oluştur
+      const qrCodeDataUrl = await QRCode.toDataURL(visitorUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: cardData.textColor || '#000000',
+          light: '#FFFFFF',
+        },
+        errorCorrectionLevel: 'M'
+      });
+      
+      console.log('✅ QR kod oluşturuldu');
+      console.log('🌐 Visitor URL:', visitorUrl);
+      
+      // QR kod verisini localStorage'a kaydet (gerektiğinde kullanmak için)
+      localStorage.setItem(`qr_code_${cardId}`, JSON.stringify({
+        cardId,
+        qrCodeDataUrl,
+        visitorUrl,
+        createdAt: new Date().toISOString()
+      }));
+      
+    } catch (error) {
+      console.error('QR kod oluşturulamadı:', error);
+      // QR hatası kartvizit kaydetmeyi engellemez
+    }
+  }
+
   const handleSave = async () => {
     try {
       console.log('🔄 Kartvizit kaydetme başladı...');
@@ -442,8 +477,7 @@ export default function CreateCard() {
         text_color: cardData.textColor || '#1f2937',
         social_media: cardData.socialMedia || {},
         projects: cardData.projects || [],
-        qr_code_type: cardData.qrCodeType || 'full',
-        qr_redirect_url: cardData.qrRedirectUrl?.trim() || null,
+        qr_code_type: 'visitor', // Sabit olarak visitor sayfası
         is_active: true
       };
 
@@ -496,6 +530,9 @@ export default function CreateCard() {
 
       console.log('✅ Kartvizit başarıyla kaydedildi:', insertedCard.id);
       console.log('📊 Kaydedilen veri:', insertedCard);
+      
+      // QR kod oluştur ve kaydet
+      await createAndSaveQRCode(insertedCard.id, cardData);
       
       // Show success message
       setSaveSuccess(true);
