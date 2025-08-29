@@ -37,7 +37,6 @@ interface BusinessCard {
   phone?: string
   website?: string
   location?: string
-  iban?: string
   projects?: any[]
   created_at: string
   user_id: string
@@ -149,7 +148,7 @@ export default function ZiyaretciKartvizitSayfasi() {
     
     try {
       const html2canvas = (await import('html2canvas')).default
-      const element = document.querySelector('.visitor-card-container')
+      const element = document.querySelector('#business-card')
       
       if (element) {
         const canvas = await html2canvas(element as HTMLElement, {
@@ -210,16 +209,19 @@ export default function ZiyaretciKartvizitSayfasi() {
   return (
     <div className="min-h-screen gradient-bg py-8">
       <div className="max-w-sm mx-auto px-4">
-        {/* Business Card - Same Design as Dashboard */}
+        {/* Business Card - EXACTLY Same as Dashboard Preview */}
         <motion.div
-          className="visitor-card-container relative bg-gradient-to-br from-white/90 to-white/80 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{ backgroundColor: card.background_color || undefined }}
+          id="business-card"
+          className="rounded-3xl shadow-2xl relative overflow-hidden"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.3 }}
+          style={{
+            backgroundColor: card.background_color || '#ffffff',
+            color: card.text_color || '#1f2937'
+          }}
         >
-          {/* Profile Photo Section */}
-          <div className="relative w-full aspect-[4/3] group">
+          {/* Full-width Profile Photo - Square with Carousel */}
+          <div className="w-full aspect-square relative group">
             {card.profile_photos && card.profile_photos.length > 0 ? (
               <>
                 <img 
@@ -277,22 +279,24 @@ export default function ZiyaretciKartvizitSayfasi() {
             }}
           ></div>
 
-          {/* Card Content */}
-          <div className="p-6 text-center">
+          {/* Card Info Section */}
+          <div className="p-6">
             {/* Name and Title */}
-            <h2 className="text-2xl font-bold mb-1" style={{ color: card.text_color || '#1f2937' }}>
-              {card.name}
-            </h2>
-            {card.title && (
-              <p className="text-lg opacity-80" style={{ color: card.text_color || '#1f2937' }}>
-                {card.title}
-              </p>
-            )}
-            {card.company && (
-              <p className="text-md opacity-70 mb-4" style={{ color: card.text_color || '#1f2937' }}>
-                {card.company}
-              </p>
-            )}
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold mb-1" style={{ color: card.text_color || '#1f2937' }}>
+                {card.name}
+              </h2>
+              {card.title && (
+                <p className="text-lg opacity-80 mb-2" style={{ color: card.text_color || '#1f2937' }}>
+                  {card.title}
+                </p>
+              )}
+              {card.company && (
+                <p className="text-md opacity-70 mb-4" style={{ color: card.text_color || '#1f2937' }}>
+                  {card.company}
+                </p>
+              )}
+            </div>
 
             {/* Contact Information */}
             <div className="space-y-3 mb-6">
@@ -332,12 +336,6 @@ export default function ZiyaretciKartvizitSayfasi() {
                 <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: card.text_color || '#1f2937' }}>
                   <MapPin className="w-4 h-4" />
                   <span className="text-sm">{card.location}</span>
-                </div>
-              )}
-              {card.iban && (
-                <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: card.text_color || '#1f2937' }}>
-                  <CreditCard className="w-4 h-4" />
-                  <span className="text-sm font-mono">{card.iban}</span>
                 </div>
               )}
             </div>
@@ -423,6 +421,20 @@ export default function ZiyaretciKartvizitSayfasi() {
                 </a>
               )}
             </div>
+
+            {/* QR Code Section - Same as Dashboard */}
+            <div className="flex justify-center pt-4">
+              <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                <div className="text-xs text-center p-2" style={{ color: card.text_color || '#1f2937' }}>
+                  <div className="mb-1">📱</div>
+                  <div>QR ile paylaş</div>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-center opacity-60 text-xs mt-2" style={{ color: card.text_color || '#1f2937' }}>
+              QR kodu tarayarak kartviziti görüntüleyin
+            </p>
 
             {/* Projects/Products Section */}
             {card.projects && card.projects.length > 0 && (

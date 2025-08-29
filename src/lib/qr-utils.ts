@@ -76,7 +76,7 @@ export function normalizeUrl(url: string): string {
 }
 
 /**
- * Kartvizit için QR kod oluşturur (Optimize edilmiş mobil tarayıcı desteği)
+ * Kartvizit için QR kod oluşturur (Direkt website yönlendirme zorlamalı)
  * @param cardId - Kart ID'si
  * @param customUrl - İsteğe bağlı özel URL (yoksa varsayılan ziyaretçi sayfası kullanılır)
  * @returns Base64 QR kod resmi
@@ -87,22 +87,32 @@ export async function generateQRCode(
 ): Promise<string> {
   try {
     // Her zaman Ravenkart domain'inde visitor sayfasını kullan
-    const targetUrl = customUrl || generateVisitorUrl(cardId)
+    let targetUrl = customUrl || generateVisitorUrl(cardId)
     
-    // URL'in geçerli olduğunu kontrol et
-    console.log('🔗 QR kod için URL:', targetUrl)
+    // QR okuyucuların direkt website olarak algılaması için URL formatını zorla
+    // vCard formatı veya başka format kullanmayalım, düz HTTP URL kullanın
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl
+    }
+    
+    console.log('🔗 QR kod için DIREKT URL:', targetUrl)
     
     const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, {
-      width: 256, // Daha yüksek çözünürlük
-      margin: 3,  // Biraz daha fazla margin
+      width: 300,     // Daha da yüksek çözünürlük
+      margin: 4,      // Daha fazla margin
       color: {
         dark: '#000000',
         light: '#FFFFFF'
       },
-      errorCorrectionLevel: 'H' // Yüksek hata düzeltme
+      errorCorrectionLevel: 'L', // Düşük hata düzeltme (daha az veri, daha kolay tarama)
+      type: 'image/png',
+      quality: 1.0,
+      rendererOpts: {
+        quality: 1.0
+      }
     })
     
-    console.log('✅ QR kod başarıyla oluşturuldu')
+    console.log('✅ QR kod başarıyla oluşturuldu - DIREKT YÖNLENDİRME MOD')
     return qrCodeDataUrl
   } catch (error) {
     console.error('QR kod oluşturulamadı:', error)
