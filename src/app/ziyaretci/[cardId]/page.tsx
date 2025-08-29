@@ -5,8 +5,23 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { motion } from 'framer-motion'
 import { Button } from '../../../components/ui/button'
-import { Card, CardContent } from '../../../components/ui/card'
-import { ExternalLink, Mail, Phone, Globe, MapPin, UserPlus, Download, Home, Share2 } from 'lucide-react'
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  Globe, 
+  MapPin, 
+  UserPlus, 
+  Download, 
+  Home,
+  CreditCard,
+  Linkedin,
+  Twitter,
+  Instagram,
+  Youtube,
+  Facebook,
+  MessageCircle
+} from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,10 +37,24 @@ interface BusinessCard {
   phone?: string
   website?: string
   location?: string
+  iban?: string
   projects?: any[]
   created_at: string
   user_id: string
   is_active: boolean
+  background_color?: string
+  ribbon_primary_color?: string
+  ribbon_secondary_color?: string
+  text_color?: string
+  profile_photos?: string[]
+  social_media?: {
+    linkedin?: string
+    twitter?: string
+    instagram?: string
+    youtube?: string
+    facebook?: string
+    whatsapp?: string
+  }
 }
 
 export default function ZiyaretciKartvizitSayfasi() {
@@ -34,6 +63,7 @@ export default function ZiyaretciKartvizitSayfasi() {
   const [card, setCard] = useState<BusinessCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
 
   useEffect(() => {
     if (cardId) {
@@ -90,7 +120,7 @@ export default function ZiyaretciKartvizitSayfasi() {
           userAgent: navigator.userAgent,
           timestamp: new Date().toISOString(),
           referrer: document.referrer || null,
-          visitType: 'qr_scan' // Ziyaretçi sayfası için özel etiket
+          visitType: 'qr_scan'
         })
       })
     } catch (error) {
@@ -147,35 +177,12 @@ export default function ZiyaretciKartvizitSayfasi() {
     }
   }
 
-  const shareCard = async () => {
-    const url = window.location.href
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${card?.name} - Dijital Kartvizit`,
-          text: `${card?.name} adlı kişinin dijital kartvizitini görüntüleyin`,
-          url: url,
-        })
-      } catch (error) {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(url)
-        alert('Link kopyalandı!')
-      }
-    } else {
-      // Fallback to clipboard
-      navigator.clipboard.writeText(url)
-      alert('Kartvizit linki kopyalandı!')
-    }
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Kartvizit yükleniyor...</p>
-          <p className="text-gray-400 text-sm mt-2">Ravenkart Ziyaretçi Merkezi</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Kartvizit yükleniyor...</p>
         </div>
       </div>
     )
@@ -183,189 +190,308 @@ export default function ZiyaretciKartvizitSayfasi() {
 
   if (error || !card) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Kartvizit Bulunamadı</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="space-y-3">
-            <Button onClick={() => window.location.href = '/'} className="w-full">
-              <Home className="mr-2 h-4 w-4" />
-              Ravenkart Ana Sayfa
-            </Button>
-            <p className="text-xs text-gray-400">Ravenkart Ziyaretçi Merkezi</p>
-          </div>
+          <div className="text-white text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Kartvizit Bulunamadı</h1>
+          <p className="text-gray-200 mb-6">{error}</p>
+          <Button 
+            onClick={() => window.location.href = '/'} 
+            className="bg-white text-gray-900 hover:bg-gray-100"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Ana Sayfa
+          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-bold">R</span>
-            </div>
-            <span className="text-gray-700 font-medium">Ravenkart</span>
-          </div>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Ziyaretçi</span>
-        </div>
-      </div>
-
-      <div className="py-8">
-        <div className="max-w-md mx-auto px-4">
-          <Card className="shadow-xl visitor-card-container overflow-hidden">
-            <CardContent className="p-0">
-              {/* Card Header with Gradient */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white text-center">
-                <div className="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 backdrop-blur-sm">
-                  {card.name.charAt(0).toUpperCase()}
-                </div>
-                <h1 className="text-2xl font-bold mb-1">{card.name}</h1>
-                {card.title && <p className="text-blue-100 text-lg">{card.title}</p>}
-                {card.company && <p className="text-blue-200 text-sm">{card.company}</p>}
-              </div>
-
-              {/* Contact Information */}
-              <div className="p-6">
-                <div className="space-y-4 mb-6">
-                  {card.email && (
-                    <motion.a
-                      href={`mailto:${card.email}`}
-                      whileHover={{ scale: 1.02 }}
-                      className="flex items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors border border-blue-100"
-                    >
-                      <Mail className="w-5 h-5 mr-3 text-blue-600" />
-                      <span className="text-gray-800 font-medium">{card.email}</span>
-                    </motion.a>
-                  )}
-                  
-                  {card.phone && (
-                    <motion.a
-                      href={`tel:${card.phone}`}
-                      whileHover={{ scale: 1.02 }}
-                      className="flex items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors border border-green-100"
-                    >
-                      <Phone className="w-5 h-5 mr-3 text-green-600" />
-                      <span className="text-gray-800 font-medium">{card.phone}</span>
-                    </motion.a>
-                  )}
-                  
-                  {card.website && (
-                    <motion.a
-                      href={card.website.startsWith('http') ? card.website : `https://${card.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      whileHover={{ scale: 1.02 }}
-                      className="flex items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors border border-purple-100"
-                    >
-                      <Globe className="w-5 h-5 mr-3 text-purple-600" />
-                      <span className="text-gray-800 font-medium flex-1 truncate">{card.website}</span>
-                      <ExternalLink className="w-4 h-4 ml-2 text-gray-400" />
-                    </motion.a>
-                  )}
-                  
-                  {card.location && (
-                    <div className="flex items-center p-4 bg-red-50 rounded-xl border border-red-100">
-                      <MapPin className="w-5 h-5 mr-3 text-red-600" />
-                      <span className="text-gray-800 font-medium">{card.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Projects */}
-                {card.projects && card.projects.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Projeler</h3>
-                    <div className="space-y-3">
-                      {card.projects.map((project, index) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                          <h4 className="font-medium text-gray-800">{project.name}</h4>
-                          {project.description && (
-                            <p className="text-sm text-gray-600 mt-1">{project.description}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+    <div className="min-h-screen gradient-bg py-8">
+      <div className="max-w-sm mx-auto px-4">
+        {/* Business Card - Same Design as Dashboard */}
+        <motion.div
+          className="visitor-card-container relative bg-gradient-to-br from-white/90 to-white/80 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          style={{ backgroundColor: card.background_color || undefined }}
+        >
+          {/* Profile Photo Section */}
+          <div className="relative w-full aspect-[4/3] group">
+            {card.profile_photos && card.profile_photos.length > 0 ? (
+              <>
+                <img 
+                  src={card.profile_photos[currentPhotoIndex]} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={() => {
+                    if (card.profile_photos && card.profile_photos.length > 1) {
+                      setCurrentPhotoIndex((prev) => 
+                        prev === card.profile_photos!.length - 1 ? 0 : prev + 1
+                      );
+                    }
+                  }}
+                />
+                
+                {/* Navigation Dots */}
+                {card.profile_photos.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {card.profile_photos.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentPhotoIndex(index);
+                        }}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentPhotoIndex 
+                            ? 'bg-white scale-125' 
+                            : 'bg-white/60 hover:bg-white/80'
+                        }`}
+                      />
+                    ))}
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button 
-                    onClick={addToContacts}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    size="lg"
-                  >
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Kişilere Ekle
-                  </Button>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button 
-                      onClick={saveScreenshot}
-                      variant="outline"
-                      className="border-blue-200 hover:bg-blue-50"
-                      size="lg"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Kaydet
-                    </Button>
-                    
-                    <Button 
-                      onClick={shareCard}
-                      variant="outline"
-                      className="border-purple-200 hover:bg-purple-50"
-                      size="lg"
-                    >
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Paylaş
-                    </Button>
+                
+                {/* Photo Counter */}
+                {card.profile_photos.length > 1 && (
+                  <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    {currentPhotoIndex + 1}/{card.profile_photos.length}
                   </div>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                <User className="w-24 h-24 text-white/60" />
+              </div>
+            )}
+          </div>
+
+          {/* 30px Ribbon with Gradient */}
+          <div 
+            className="h-8 border-t border-white/20"
+            style={{
+              background: `linear-gradient(90deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+            }}
+          ></div>
+
+          {/* Card Content */}
+          <div className="p-6 text-center">
+            {/* Name and Title */}
+            <h2 className="text-2xl font-bold mb-1" style={{ color: card.text_color || '#1f2937' }}>
+              {card.name}
+            </h2>
+            {card.title && (
+              <p className="text-lg opacity-80" style={{ color: card.text_color || '#1f2937' }}>
+                {card.title}
+              </p>
+            )}
+            {card.company && (
+              <p className="text-md opacity-70 mb-4" style={{ color: card.text_color || '#1f2937' }}>
+                {card.company}
+              </p>
+            )}
+
+            {/* Contact Information */}
+            <div className="space-y-3 mb-6">
+              {card.email && (
+                <a 
+                  href={`mailto:${card.email}`}
+                  className="flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity" 
+                  style={{ color: card.text_color || '#1f2937' }}
+                >
+                  <Mail className="w-4 h-4" />
+                  <span className="text-sm">{card.email}</span>
+                </a>
+              )}
+              {card.phone && (
+                <a 
+                  href={`tel:${card.phone}`}
+                  className="flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity" 
+                  style={{ color: card.text_color || '#1f2937' }}
+                >
+                  <Phone className="w-4 h-4" />
+                  <span className="text-sm">{card.phone}</span>
+                </a>
+              )}
+              {card.website && (
+                <a 
+                  href={card.website.startsWith('http') ? card.website : `https://${card.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity" 
+                  style={{ color: card.text_color || '#1f2937' }}
+                >
+                  <Globe className="w-4 h-4" />
+                  <span className="text-sm">{card.website}</span>
+                </a>
+              )}
+              {card.location && (
+                <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: card.text_color || '#1f2937' }}>
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm">{card.location}</span>
+                </div>
+              )}
+              {card.iban && (
+                <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: card.text_color || '#1f2937' }}>
+                  <CreditCard className="w-4 h-4" />
+                  <span className="text-sm font-mono">{card.iban}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Social Media Icons */}
+            <div className="flex justify-center gap-4 py-4">
+              {card.social_media?.linkedin && (
+                <a 
+                  href={`https://linkedin.com/in/${card.social_media.linkedin}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+                  }}
+                >
+                  <Linkedin className="w-5 h-5 text-white" />
+                </a>
+              )}
+              {card.social_media?.twitter && (
+                <a 
+                  href={`https://twitter.com/${card.social_media.twitter}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+                  }}
+                >
+                  <Twitter className="w-5 h-5 text-white" />
+                </a>
+              )}
+              {card.social_media?.instagram && (
+                <a 
+                  href={`https://instagram.com/${card.social_media.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+                  }}
+                >
+                  <Instagram className="w-5 h-5 text-white" />
+                </a>
+              )}
+              {card.social_media?.youtube && (
+                <a 
+                  href={`https://youtube.com/${card.social_media.youtube}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+                  }}
+                >
+                  <Youtube className="w-5 h-5 text-white" />
+                </a>
+              )}
+              {card.social_media?.facebook && (
+                <a 
+                  href={`https://facebook.com/${card.social_media.facebook}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+                  }}
+                >
+                  <Facebook className="w-5 h-5 text-white" />
+                </a>
+              )}
+              {card.social_media?.whatsapp && (
+                <a 
+                  href={`https://wa.me/${card.social_media.whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
+                  }}
+                >
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </a>
+              )}
+            </div>
+
+            {/* Projects/Products Section */}
+            {card.projects && card.projects.length > 0 && (
+              <div className="pt-6 border-t border-white/20">
+                <h3 className="text-white font-semibold mb-3 text-center">Projeler & Ürünler</h3>
+                <div className="space-y-3">
+                  {card.projects.map((project, index) => (
+                    <div key={index} className="bg-white/10 rounded-lg p-3">
+                      <h4 className="text-white font-medium text-sm">{project.title || project.name}</h4>
+                      <p className="text-white/80 text-xs mt-1">{project.description}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Ravenkart CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8"
-          >
-            <Card className="bg-gradient-to-r from-blue-600 to-purple-700 text-white border-0">
-              <CardContent className="p-6 text-center">
-                <h3 className="font-bold text-xl mb-2">
-                  🚀 Sen de Ravenkart'ta!
-                </h3>
-                <p className="text-blue-100 mb-4">
-                  Kendi dijital kartvizitini oluştur, QR kod ile paylaş ve profesyonel imajını güçlendir.
-                </p>
-                <Button 
-                  onClick={() => window.location.href = '/'}
-                  variant="secondary"
-                  size="lg"
-                  className="bg-white text-blue-600 hover:bg-gray-100"
-                >
-                  Hemen Başla - Ücretsiz
-                </Button>
-                <p className="text-xs text-blue-200 mt-3">
-                  ✨ 30 saniyede kartvizitini oluştur
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-400">
-              Powered by <span className="font-semibold">Ravenkart</span> - Dijital Kartvizit Platformu
-            </p>
+            )}
           </div>
+
+          {/* Powered by RAVENKART */}
+          <div className="bg-black/20 py-2 text-center">
+            <a 
+              href="/" 
+              className="text-white/60 text-xs hover:text-white/80 transition-colors"
+            >
+              Powered by RAVENKART
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Action Buttons - Same as Dashboard */}
+        <div className="space-y-4 max-w-sm mx-auto px-4 mt-8">
+          {/* Kişilere Ekle Button */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={addToContacts}
+            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+            <UserPlus className="w-5 h-5 relative z-10" />
+            <span className="relative z-10">Kişilere Ekle</span>
+          </motion.button>
+
+          {/* Görüntü Kaydet Button */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={saveScreenshot}
+            className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+            <Download className="w-5 h-5 relative z-10" />
+            <span className="relative z-10">Görüntü Kaydet</span>
+          </motion.button>
+
+          {/* Ana Sayfaya Dön */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => window.location.href = '/'}
+            className="w-full py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 border border-white/20 hover:bg-white/20 transition-colors"
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Home className="w-5 h-5" />
+            <span>Ravenkart'a Katıl</span>
+          </motion.button>
         </div>
       </div>
     </div>
