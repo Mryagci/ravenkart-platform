@@ -197,18 +197,21 @@ END:VCARD`
         return;
       }
 
-      // QR kod oluştur - Yeni Ravenkart ziyaretçi bölümüne yönlendiren
+      // QR kod oluştur - Optimize edilmiş mobil tarayıcı desteği
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const visitorUrl = `${baseUrl}/ziyaretci/${businessCard.id}`;
+      
+      // URL debug için log
+      console.log('🔗 Dashboard QR kod için URL:', visitorUrl);
 
       const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
-        width: 200,
-        margin: 2,
+        width: 256, // Daha yüksek çözünürlük
+        margin: 3,  // Daha fazla margin
         color: {
           dark: businessCard.textColor || '#000000',
           light: '#FFFFFF',
         },
-        errorCorrectionLevel: 'M'
+        errorCorrectionLevel: 'H' // Yüksek hata düzeltme
       });
 
       setQrCodeUrl(qrDataUrl);

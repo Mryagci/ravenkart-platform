@@ -76,7 +76,7 @@ export function normalizeUrl(url: string): string {
 }
 
 /**
- * Kartvizit için QR kod oluşturur
+ * Kartvizit için QR kod oluşturur (Optimize edilmiş mobil tarayıcı desteği)
  * @param cardId - Kart ID'si
  * @param customUrl - İsteğe bağlı özel URL (yoksa varsayılan ziyaretçi sayfası kullanılır)
  * @returns Base64 QR kod resmi
@@ -89,16 +89,20 @@ export async function generateQRCode(
     // Her zaman Ravenkart domain'inde visitor sayfasını kullan
     const targetUrl = customUrl || generateVisitorUrl(cardId)
     
+    // URL'in geçerli olduğunu kontrol et
+    console.log('🔗 QR kod için URL:', targetUrl)
+    
     const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, {
-      width: 200,
-      margin: 2,
+      width: 256, // Daha yüksek çözünürlük
+      margin: 3,  // Biraz daha fazla margin
       color: {
         dark: '#000000',
         light: '#FFFFFF'
       },
-      errorCorrectionLevel: 'M'
+      errorCorrectionLevel: 'H' // Yüksek hata düzeltme
     })
     
+    console.log('✅ QR kod başarıyla oluşturuldu')
     return qrCodeDataUrl
   } catch (error) {
     console.error('QR kod oluşturulamadı:', error)
