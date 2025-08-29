@@ -220,20 +220,71 @@ END:VCARD`
       }
       setUser(user);
 
-      // Check if user has a business card in localStorage
-      const savedCard = localStorage.getItem('business_card');
-      if (savedCard) {
-        const cardData = JSON.parse(savedCard);
-        if (cardData.user_id === user.id) {
-          setBusinessCard(cardData);
-        }
-      }
+      // Check if user has a business card in Supabase
+      await fetchUserCard(user.id);
       
     } catch (error) {
       console.error('Error:', error);
       router.push('/auth?mode=login');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchUserCard(userId: string) {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      console.log('🔍 Kullanıcının kartlarını arıyorum:', userId);
+
+      const { data, error } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Kart getirme hatası:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const card = data[0];
+        console.log('✅ Kullanıcının kartı bulundu:', card.name);
+        
+        // Convert Supabase format to dashboard format
+        const dashboardCard = {
+          id: card.id,
+          name: card.name,
+          title: card.title || '',
+          company: card.company || '',
+          phone: card.phone || '',
+          email: card.email || '',
+          website: card.website || '',
+          location: card.location || '',
+          iban: card.iban || '',
+          profilePhotos: card.profile_photos || [],
+          backgroundColor: card.background_color || '#ffffff',
+          ribbonPrimaryColor: card.ribbon_primary_color || '#8b5cf6',
+          ribbonSecondaryColor: card.ribbon_secondary_color || '#3b82f6',
+          textColor: card.text_color || '#1f2937',
+          socialMedia: card.social_media || {},
+          projects: card.projects || [],
+          created_at: card.created_at
+        };
+        
+        setBusinessCard(dashboardCard);
+      } else {
+        console.log('❌ Kullanıcının kartı bulunamadı');
+      }
+    } catch (error) {
+      console.error('Kart yükleme hatası:', error);
     }
   }
 
@@ -292,11 +343,11 @@ END:VCARD`
                       <span>Kart Tarayıcı</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => document.getElementById('analytics')?.scrollIntoView({ behavior: 'smooth' })}
+                      onClick={() => router.push('/dashboard/analytics')}
                       className="text-white hover:bg-white/20 focus:bg-white/20"
                     >
                       <BarChart3 className="mr-2 h-4 w-4" />
-                      <span>Analitik</span>
+                      <span>Detaylı Analitik</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-white/20" />
                     <DropdownMenuItem 

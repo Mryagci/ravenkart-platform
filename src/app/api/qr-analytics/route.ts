@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Temel istatistikleri hesapla
+    // Detaylı istatistikleri hesapla
     const totalScans = data.length
     const today = new Date().toISOString().split('T')[0]
     const todayScans = data.filter(scan => 
@@ -96,10 +96,79 @@ export async function GET(request: NextRequest) {
       new Date(scan.scanned_at) >= sevenDaysAgo
     )
 
+    // Son 30 günlük veri
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const monthlyScans = data.filter(scan => 
+      new Date(scan.scanned_at) >= thirtyDaysAgo
+    )
+
+    // Günlük istatistikler (son 30 gün)
+    const dailyStats = {}
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      dailyStats[dateStr] = data.filter(scan => 
+        scan.scanned_at.split('T')[0] === dateStr
+      ).length
+    }
+
+    // Cihaz analizi (User Agent'tan)
+    const deviceStats = {}
+    data.forEach(scan => {
+      if (!scan.user_agent) return
+      const ua = scan.user_agent.toLowerCase()
+      let device = 'Bilinmeyen'
+      
+      if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+        device = 'Mobil'
+      } else if (ua.includes('tablet') || ua.includes('ipad')) {
+        device = 'Tablet'
+      } else {
+        device = 'Masaüstü'
+      }
+      
+      deviceStats[device] = (deviceStats[device] || 0) + 1
+    })
+
+    // Saatlik dağılım
+    const hourlyStats = {}
+    for (let h = 0; h < 24; h++) {
+      hourlyStats[h] = 0
+    }
+    data.forEach(scan => {
+      if (scan.scanned_at) {
+        const hour = new Date(scan.scanned_at).getHours()
+        hourlyStats[hour] = (hourlyStats[hour] || 0) + 1
+      }
+    })
+
+    // Haftalık dağılım
+    const weeklyStats = {}
+    const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+    dayNames.forEach(day => weeklyStats[day] = 0)
+    
+    data.forEach(scan => {
+      if (scan.scanned_at) {
+        const dayName = dayNames[new Date(scan.scanned_at).getDay()]
+        weeklyStats[dayName] = (weeklyStats[dayName] || 0) + 1
+      }
+    })
+
+    // Eşsiz ziyaretçi sayısı (IP bazlı yaklaşık)
+    const uniqueIPs = new Set(data.map(scan => scan.ip_address)).size
+
     return NextResponse.json({
       totalScans,
       todayScans,
       recentScans: recentScans.length,
+      monthlyScans: monthlyScans.length,
+      uniqueVisitors: uniqueIPs,
+      dailyStats,
+      deviceStats,
+      hourlyStats,
+      weeklyStats,
       scans: data.slice(0, 100) // Son 100 tarama
     })
 

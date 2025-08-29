@@ -234,34 +234,38 @@ export default function CreateCard() {
 
   const generateQRCode = async () => {
     try {
-      if (!cardData.name || !user?.id) {
+      if (!cardData.name) {
         setQrCodeUrl('');
         return;
       }
 
-      // Önizleme sayfası için geçici QR URL
-      // Gerçek kart kaydedildiğinde /qr/cardId formatında olacak
-      const previewQRUrl = `${window.location.origin}/u/${user.id}`;
+      // Preview QR code - will show visitor page URL format
+      // When card is saved, it will use the actual card ID
+      const previewUrl = cardData.qrRedirectUrl && cardData.qrRedirectUrl.trim() 
+        ? cardData.qrRedirectUrl.trim()
+        : `${window.location.origin}/v/preview-${Date.now()}`;
 
-      const qrDataUrl = await QRCode.toDataURL(previewQRUrl, {
+      const qrDataUrl = await QRCode.toDataURL(previewUrl, {
         width: 200,
-        margin: 1,
+        margin: 2,
         color: {
           dark: cardData.textColor || '#000000',
           light: '#FFFFFF',
         },
+        errorCorrectionLevel: 'M'
       });
       
       setQrCodeUrl(qrDataUrl);
     } catch (error) {
       console.error('QR kod oluşturma hatası:', error);
+      setQrCodeUrl('');
     }
   }
 
   // Generate QR code when card data changes
   useEffect(() => {
     generateQRCode();
-  }, [cardData.name, cardData.textColor, user?.id]);
+  }, [cardData.name, cardData.textColor, cardData.qrRedirectUrl]);
 
   const exportVCF = () => {
     if (!cardData.name) {
@@ -383,6 +387,7 @@ export default function CreateCard() {
 
   const handleSave = async () => {
     try {
+      console.log('🔄 Kartvizit kaydetme başladı...');
       setSaving(true);
       
       if (!cardData.name.trim()) {
@@ -397,41 +402,100 @@ export default function CreateCard() {
         return;
       }
 
-      const cardId = Date.now().toString();
-      const businessCardData = {
-        ...cardData,
-        username: cardData.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''),
-        created_at: new Date().toISOString()
+      console.log('✅ Kullanıcı doğrulandı:', user.id);
+
+      // Import Supabase client
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      // Generate unique username with timestamp and random number
+      const baseUsername = cardData.name.toLowerCase()
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special chars
+        .replace(/\s+/g, '') // Remove spaces
+        .substring(0, 10); // Limit length to make room for timestamp
+      
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // 3-digit random number
+      const username = `${baseUsername}${timestamp}${randomNum}`;
+
+      console.log('📝 Oluşturulan username:', username);
+
+      // Prepare card data for database
+      const cardDataForDB = {
+        user_id: user.id,
+        username: username,
+        name: cardData.name.trim(),
+        title: cardData.title?.trim() || null,
+        company: cardData.company?.trim() || null,
+        company_logo: cardData.companyLogo || null,
+        phone: cardData.phone?.trim() || null,
+        email: cardData.email?.trim() || null,
+        website: cardData.website?.trim() || null,
+        location: cardData.location?.trim() || null,
+        profile_photos: cardData.profilePhotos && cardData.profilePhotos.length > 0 ? cardData.profilePhotos : null,
+        background_color: cardData.backgroundColor || '#ffffff',
+        ribbon_primary_color: cardData.ribbonPrimaryColor || '#8b5cf6',
+        ribbon_secondary_color: cardData.ribbonSecondaryColor || '#3b82f6',
+        text_color: cardData.textColor || '#1f2937',
+        social_media: cardData.socialMedia || {},
+        projects: cardData.projects || [],
+        qr_code_type: cardData.qrCodeType || 'full',
+        qr_redirect_url: cardData.qrRedirectUrl?.trim() || null,
+        is_active: true
       };
 
-      // Geçici çözüm: QR kodu client-side oluştur
-      const tempCardId = `temp-${Date.now()}`;
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      const qrUrl = `${baseUrl}/v/${tempCardId}`;
-      
-      // QR kod oluştur
-      const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-        quality: 0.92,
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        width: 256
-      });
-      
-      // Save to localStorage with QR data
-      const finalCardData = {
-        ...businessCardData,
-        id: tempCardId,
-        user_id: user.id,
-        qr_code_url: qrUrl,
-        qr_code_data: qrCodeDataUrl
-      };
-      
-      localStorage.setItem('business_card', JSON.stringify(finalCardData));
+      // Insert card to database with retry for unique constraint
+      let insertedCard = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (!insertedCard && retryCount < maxRetries) {
+        try {
+          // If this is a retry, generate a new username
+          if (retryCount > 0) {
+            const newTimestamp = Date.now().toString().slice(-6);
+            const newRandomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            cardDataForDB.username = `${baseUsername}${newTimestamp}${newRandomNum}`;
+            console.log(`Username çakışması, yeni deneme: ${cardDataForDB.username}`);
+          }
+
+          const { data, error: insertError } = await supabase
+            .from('cards')
+            .insert(cardDataForDB)
+            .select('id')
+            .single();
+
+          if (insertError) {
+            // If it's a username conflict, retry
+            if (insertError.code === '23505' && insertError.message.includes('cards_username_key')) {
+              retryCount++;
+              console.log(`Username çakışması (deneme ${retryCount}/${maxRetries})`);
+              continue;
+            }
+            // Other errors, throw immediately
+            throw new Error(`Veritabanı hatası: ${insertError.message}`);
+          }
+
+          insertedCard = data;
+          break;
+
+        } catch (error) {
+          if (retryCount >= maxRetries - 1) {
+            throw error;
+          }
+          retryCount++;
+        }
+      }
+
+      if (!insertedCard) {
+        throw new Error('Kartvizit kaydedilemedi');
+      }
+
+      console.log('✅ Kartvizit başarıyla kaydedildi:', insertedCard.id);
+      console.log('📊 Kaydedilen veri:', insertedCard);
       
       // Show success message
       setSaveSuccess(true);

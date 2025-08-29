@@ -1,14 +1,25 @@
+import QRCode from 'qrcode'
+
 /**
- * QR kod için dinamik URL oluşturur
+ * Ziyaretçi sayfası için dinamik URL oluşturur
+ * @param cardId - Kart ID'si
+ * @returns Ziyaretçi sayfası URL'i
+ */
+export function generateVisitorUrl(cardId: string): string {
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://www.ravenkart.com' 
+    : 'http://localhost:3000'
+  
+  return `${baseUrl}/v/${cardId}`
+}
+
+/**
+ * QR kod için dinamik URL oluşturur (geriye dönük uyumluluk için)
  * @param cardId - Kart ID'si
  * @returns QR kod taraması için dinamik URL
  */
 export function generateDynamicQRUrl(cardId: string): string {
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://ravenkart.com' 
-    : 'http://localhost:3000'
-  
-  return `${baseUrl}/qr/${cardId}`
+  return generateVisitorUrl(cardId)
 }
 
 /**
@@ -59,4 +70,65 @@ export function normalizeUrl(url: string): string {
   
   // Protocol yoksa https ekle
   return `https://${url}`
+}
+
+/**
+ * Kartvizit için QR kod oluşturur
+ * @param cardId - Kart ID'si
+ * @param customUrl - İsteğe bağlı özel URL (yoksa varsayılan ziyaretçi sayfası kullanılır)
+ * @returns Base64 QR kod resmi
+ */
+export async function generateQRCode(
+  cardId: string, 
+  customUrl?: string
+): Promise<string> {
+  try {
+    const targetUrl = customUrl || generateVisitorUrl(cardId)
+    
+    const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, {
+      width: 200,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      errorCorrectionLevel: 'M'
+    })
+    
+    return qrCodeDataUrl
+  } catch (error) {
+    console.error('QR kod oluşturulamadı:', error)
+    throw new Error('QR kod oluşturulamadı')
+  }
+}
+
+/**
+ * Kartvizit için SVG QR kod oluşturur
+ * @param cardId - Kart ID'si 
+ * @param customUrl - İsteğe bağlı özel URL
+ * @returns SVG string
+ */
+export async function generateQRCodeSVG(
+  cardId: string,
+  customUrl?: string
+): Promise<string> {
+  try {
+    const targetUrl = customUrl || generateVisitorUrl(cardId)
+    
+    const svgString = await QRCode.toString(targetUrl, {
+      type: 'svg',
+      width: 200,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      errorCorrectionLevel: 'M'
+    })
+    
+    return svgString
+  } catch (error) {
+    console.error('SVG QR kod oluşturulamadı:', error)
+    throw new Error('SVG QR kod oluşturulamadı')
+  }
 }

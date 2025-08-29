@@ -1,476 +1,339 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import { motion } from 'framer-motion'
-import { Phone, Mail, Globe, MapPin, User, Building, Download, Home, Instagram, Linkedin, Twitter, Youtube, Facebook, MessageCircle, UserPlus, Share2, ExternalLink } from 'lucide-react'
+import { Button } from '../../../components/ui/button'
+import { Card, CardContent } from '../../../components/ui/card'
+import { ExternalLink, User, Mail, Phone, Globe, MapPin, Building2, QrCode, Edit, UserPlus, Download, Home } from 'lucide-react'
 
-interface SocialMedia {
-  linkedin?: string
-  twitter?: string
-  instagram?: string
-  youtube?: string
-  facebook?: string
-  whatsapp?: string
-  showInPublic?: boolean
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-interface BusinessCardData {
+interface BusinessCard {
   id: string
   name: string
-  title: string
-  company: string
-  companyLogo?: string
-  phone: string
-  email: string
-  website: string
-  location: string
-  profilePhotos?: string[]
-  backgroundColor?: string
-  ribbonPrimaryColor?: string
-  ribbonSecondaryColor?: string
-  textColor?: string
-  socialMedia?: SocialMedia
-  qr_code_url?: string
-  qr_code_data?: string
+  title?: string
+  company?: string
+  email?: string
+  phone?: string
+  website?: string
+  address?: string
+  iban?: string
+  custom_qr_url?: string
+  projects?: any[]
+  created_at: string
+  user_id: string
+  is_active: boolean
 }
 
 export default function VisitorCardPage() {
   const params = useParams()
   const cardId = params.cardId as string
-  
-  const [cardData, setCardData] = useState<BusinessCardData | null>(null)
+  const [card, setCard] = useState<BusinessCard | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
-  const [showAddToContactsSuccess, setShowAddToContactsSuccess] = useState(false)
-  const [showAddToHomeScreenSuccess, setShowAddToHomeScreenSuccess] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    loadCardData()
+    if (cardId) {
+      fetchCard()
+      // Analytics tracking
+      trackVisit()
+    }
   }, [cardId])
 
-  const loadCardData = async () => {
+  const fetchCard = async () => {
     try {
-      // For now, check localStorage (in real app, fetch from database via API)
-      const savedCard = localStorage.getItem('business_card')
-      if (savedCard) {
-        const card = JSON.parse(savedCard)
-        if (card.id === cardId) {
-          setCardData(card)
-        } else {
-          // Card not found
-          setCardData(null)
-        }
+      setLoading(true)
+      
+      const { data, error } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('id', cardId)
+        .eq('is_active', true)
+        .single()
+
+      if (error) {
+        console.error('Card fetch error:', error)
+        setError('Kartvizit bulunamadı veya aktif değil')
+        return
       }
-    } catch (error) {
-      console.error('Error loading card:', error)
+
+      if (!data) {
+        setError('Kartvizit bulunamadı')
+        return
+      }
+
+      setCard(data)
+    } catch (err) {
+      console.error('Fetch error:', err)
+      setError('Kartvizit yüklenirken hata oluştu')
     } finally {
       setLoading(false)
     }
   }
 
-  const addToContacts = () => {
-    if (!cardData) return
+  const trackVisit = async () => {
+    try {
+      // QR Analytics tracking
+      await fetch('/api/qr-analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cardId: cardId,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+          referrer: document.referrer || null
+        })
+      })
+    } catch (error) {
+      console.log('Analytics tracking failed:', error)
+      // Don't block user experience for analytics failure
+    }
+  }
 
-    const { downloadVCF } = require('@/lib/vcf-utils')
+  const addToContacts = () => {
+    if (!card) return
+
+    const { downloadVCF } = require('../../../lib/vcf-utils')
     
     downloadVCF({
-      name: cardData.name,
-      company: cardData.company,
-      title: cardData.title,
-      phone: cardData.phone,
-      email: cardData.email,
-      website: cardData.website,
-      location: cardData.location
+      name: card.name,
+      company: card.company || '',
+      title: card.title || '',
+      phone: card.phone || '',
+      email: card.email || '',
+      website: card.website || '',
+      location: card.address || ''
     })
-
-    // Show success message
-    setShowAddToContactsSuccess(true)
-    setTimeout(() => setShowAddToContactsSuccess(false), 3000)
   }
 
-  const addToHomeScreen = () => {
-    if (!cardData) return
-
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    const isAndroid = /Android/.test(navigator.userAgent)
-    
-    if (isIOS) {
-      // iOS specific instructions
-      alert('iOS: Safari menüsünden "Ana Ekrana Ekle" seçeneğini kullanabilirsiniz.')
-    } else if (isAndroid) {
-      // Android specific instructions
-      alert('Android: Tarayıcı menüsünden "Ana ekrana ekle" seçeneğini kullanabilirsiniz.')
-    } else {
-      // Desktop - copy URL to clipboard
-      const currentUrl = window.location.href
-      navigator.clipboard.writeText(currentUrl).then(() => {
-        setShowAddToHomeScreenSuccess(true)
-        setTimeout(() => setShowAddToHomeScreenSuccess(false), 3000)
-      }).catch(() => {
-        alert('Bağlantı kopyalanamadı. Manuel olarak kopyalayabilirsiniz: ' + currentUrl)
-      })
+  const handleCustomRedirect = () => {
+    if (card?.custom_qr_url) {
+      window.open(card.custom_qr_url, '_blank')
     }
   }
 
-  const openSocialMedia = (platform: string, username: string) => {
-    let url = ''
-    
-    switch (platform) {
-      case 'linkedin':
-        url = `https://linkedin.com/in/${username}`
-        break
-      case 'twitter':
-        url = `https://twitter.com/${username.replace('@', '')}`
-        break
-      case 'instagram':
-        url = `https://instagram.com/${username}`
-        break
-      case 'youtube':
-        url = `https://youtube.com/@${username.replace('@', '')}`
-        break
-      case 'facebook':
-        url = `https://facebook.com/${username}`
-        break
-      case 'whatsapp':
-        url = `https://wa.me/${username.replace(/[^0-9]/g, '')}`
-        break
-      default:
-        return
-    }
-    
-    window.open(url, '_blank')
+  const handleViewCard = () => {
+    // Stay on same page but show full card details
+    window.location.href = `/v/${cardId}?view=full`
   }
+
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
-        <div className="text-white text-xl">Yükleniyor...</div>
-      </div>
-    )
-  }
-
-  if (!cardData) {
-    return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Kartvizit Bulunamadı</h1>
-          <p className="text-white/70 mb-8">Aradığınız kartvizit mevcut değil veya kaldırılmış.</p>
-          <motion.a
-            href="/"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-block px-6 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-          >
-            Ana Sayfaya Dön
-          </motion.a>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Kartvizit yükleniyor...</p>
         </div>
       </div>
     )
   }
 
+  if (error || !card) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Kartvizit Bulunamadı</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.href = '/'}>
+            Ana Sayfaya Dön
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Check if custom URL is set and redirect logic
+  const isFullView = new URLSearchParams(window.location.search).get('view') === 'full'
+  
+  if (card.custom_qr_url && !isFullView) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-6 text-center">
+            <div className="text-blue-500 text-6xl mb-4">🔗</div>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">Özel Yönlendirme</h1>
+            <p className="text-gray-600 mb-4">
+              {card.name} bu QR kod için özel bir bağlantı ayarlamış.
+            </p>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={handleCustomRedirect}
+                className="w-full"
+                size="lg"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Özel Sayfaya Git
+              </Button>
+              
+              <Button 
+                onClick={handleViewCard}
+                variant="outline"
+                className="w-full"
+                size="lg"
+              >
+                <User className="mr-2 h-4 w-4" />
+                Kartviziti Görüntüle
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-400 mt-4">
+              Ravenkart ile oluşturuldu
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Main card display
   return (
-    <div className="min-h-screen gradient-bg">
-      {/* Success Messages */}
-      {showAddToContactsSuccess && (
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg"
-        >
-          ✅ Kişi bilgileri indirildi!
-        </motion.div>
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 py-8">
+      <div className="max-w-md mx-auto px-4">
+        <Card className="shadow-xl">
+          <CardContent className="p-6">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                {card.name.charAt(0).toUpperCase()}
+              </div>
+              <h1 className="text-2xl font-bold text-gray-800 mb-1">{card.name}</h1>
+              {card.title && <p className="text-gray-600 text-lg">{card.title}</p>}
+              {card.company && <p className="text-gray-500">{card.company}</p>}
+            </div>
 
-      {showAddToHomeScreenSuccess && (
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-500 text-white px-6 py-3 rounded-xl shadow-lg"
-        >
-          ✅ Bağlantı panoya kopyalandı!
-        </motion.div>
-      )}
+            {/* Contact Info */}
+            <div className="space-y-4 mb-6">
+              {card.email && (
+                <motion.a
+                  href={`mailto:${card.email}`}
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Mail className="w-5 h-5 mr-3 text-blue-500" />
+                  <span className="text-gray-700">{card.email}</span>
+                </motion.a>
+              )}
+              
+              {card.phone && (
+                <motion.a
+                  href={`tel:${card.phone}`}
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Phone className="w-5 h-5 mr-3 text-green-500" />
+                  <span className="text-gray-700">{card.phone}</span>
+                </motion.a>
+              )}
+              
+              {card.website && (
+                <motion.a
+                  href={card.website.startsWith('http') ? card.website : `https://${card.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Globe className="w-5 h-5 mr-3 text-purple-500" />
+                  <span className="text-gray-700 flex-1 truncate">{card.website}</span>
+                  <ExternalLink className="w-4 h-4 ml-2 text-gray-400" />
+                </motion.a>
+              )}
+              
+              {card.address && (
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <MapPin className="w-5 h-5 mr-3 text-red-500" />
+                  <span className="text-gray-700">{card.address}</span>
+                </div>
+              )}
 
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Business Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="rounded-3xl shadow-2xl relative overflow-hidden"
-            style={{
-              backgroundColor: cardData.backgroundColor || '#ffffff',
-              color: cardData.textColor || '#1f2937'
-            }}
-          >
-            {/* Full-width Profile Photo */}
-            <div className="w-full aspect-square relative group">
-              {cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
-                <>
-                  <img 
-                    src={cardData.profilePhotos[currentPhotoIndex]} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => {
-                      if (cardData.profilePhotos && cardData.profilePhotos.length > 1) {
-                        setCurrentPhotoIndex((prev) => 
-                          prev === cardData.profilePhotos!.length - 1 ? 0 : prev + 1
-                        )
-                      }
-                    }}
-                  />
-                  
-                  {/* Navigation Dots */}
-                  {cardData.profilePhotos.length > 1 && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {cardData.profilePhotos.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setCurrentPhotoIndex(index)
-                          }}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            index === currentPhotoIndex 
-                              ? 'bg-white scale-125' 
-                              : 'bg-white/60 hover:bg-white/80'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Photo Counter */}
-                  {cardData.profilePhotos.length > 1 && (
-                    <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      {currentPhotoIndex + 1}/{cardData.profilePhotos.length}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                  <User className="w-24 h-24 text-white/60" />
+              {card.iban && (
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <Building2 className="w-5 h-5 mr-3 text-orange-500" />
+                  <span className="text-gray-700 font-mono text-sm">{card.iban}</span>
                 </div>
               )}
             </div>
 
-            {/* Ribbon with Gradient */}
-            <div 
-              className="h-8 border-t border-white/20"
-              style={{
-                background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-              }}
-            />
-
-            {/* Content Section */}
-            <div className="p-6 space-y-4">
-              {/* Name, Title, Company */}
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold" style={{ color: cardData.textColor || '#1f2937' }}>
-                  {cardData.name}
-                </h1>
-                <p className="font-medium text-lg opacity-90" style={{ color: cardData.textColor || '#1f2937' }}>
-                  {cardData.title}
-                </p>
-                <p className="text-base opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>
-                  {cardData.company}
-                </p>
-              </div>
-
-              {/* Contact Info */}
-              <div className="space-y-3">
-                {cardData.phone && (
-                  <motion.a
-                    href={`tel:${cardData.phone}`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors"
-                    style={{ color: cardData.textColor || '#1f2937' }}
-                  >
-                    <Phone className="w-4 h-4" />
-                    <span className="text-sm">{cardData.phone}</span>
-                    <ExternalLink className="w-3 h-3 opacity-60" />
-                  </motion.a>
-                )}
-                {cardData.email && (
-                  <motion.a
-                    href={`mailto:${cardData.email}`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors"
-                    style={{ color: cardData.textColor || '#1f2937' }}
-                  >
-                    <Mail className="w-4 h-4" />
-                    <span className="text-sm">{cardData.email}</span>
-                    <ExternalLink className="w-3 h-3 opacity-60" />
-                  </motion.a>
-                )}
-                {cardData.website && (
-                  <motion.a
-                    href={cardData.website.startsWith('http') ? cardData.website : `https://${cardData.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors"
-                    style={{ color: cardData.textColor || '#1f2937' }}
-                  >
-                    <Globe className="w-4 h-4" />
-                    <span className="text-sm">{cardData.website}</span>
-                    <ExternalLink className="w-3 h-3 opacity-60" />
-                  </motion.a>
-                )}
-                {cardData.location && (
-                  <div className="flex items-center justify-center gap-3 p-3 rounded-xl opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">{cardData.location}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Social Media Icons */}
-              {cardData.socialMedia && (cardData.socialMedia.linkedin || cardData.socialMedia.twitter || cardData.socialMedia.instagram || cardData.socialMedia.youtube || cardData.socialMedia.facebook || cardData.socialMedia.whatsapp) && (
-                <div className="pt-4">
-                  <h3 className="text-center text-sm font-medium mb-3 opacity-70" style={{ color: cardData.textColor || '#1f2937' }}>
-                    Sosyal Medya
-                  </h3>
-                  <div className="flex justify-center gap-3 flex-wrap">
-                    {cardData.socialMedia.linkedin && (
-                      <motion.button
-                        onClick={() => openSocialMedia('linkedin', cardData.socialMedia!.linkedin!)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-                        style={{
-                          background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <Linkedin className="w-5 h-5 text-white" />
-                      </motion.button>
-                    )}
-                    {cardData.socialMedia.twitter && (
-                      <motion.button
-                        onClick={() => openSocialMedia('twitter', cardData.socialMedia!.twitter!)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-                        style={{
-                          background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <Twitter className="w-5 h-5 text-white" />
-                      </motion.button>
-                    )}
-                    {cardData.socialMedia.instagram && (
-                      <motion.button
-                        onClick={() => openSocialMedia('instagram', cardData.socialMedia!.instagram!)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-                        style={{
-                          background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <Instagram className="w-5 h-5 text-white" />
-                      </motion.button>
-                    )}
-                    {cardData.socialMedia.youtube && (
-                      <motion.button
-                        onClick={() => openSocialMedia('youtube', cardData.socialMedia!.youtube!)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-                        style={{
-                          background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <Youtube className="w-5 h-5 text-white" />
-                      </motion.button>
-                    )}
-                    {cardData.socialMedia.facebook && (
-                      <motion.button
-                        onClick={() => openSocialMedia('facebook', cardData.socialMedia!.facebook!)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-                        style={{
-                          background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <Facebook className="w-5 h-5 text-white" />
-                      </motion.button>
-                    )}
-                    {cardData.socialMedia.whatsapp && (
-                      <motion.button
-                        onClick={() => openSocialMedia('whatsapp', cardData.socialMedia!.whatsapp!)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-                        style={{
-                          background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <MessageCircle className="w-5 h-5 text-white" />
-                      </motion.button>
-                    )}
-                  </div>
+            {/* Projects */}
+            {card.projects && card.projects.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Projeler</h3>
+                <div className="space-y-3">
+                  {card.projects.map((project, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-800">{project.name}</h4>
+                      {project.description && (
+                        <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button 
+                onClick={addToContacts}
+                className="w-full bg-green-500 hover:bg-green-600"
+                size="lg"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Kişilere Ekle
+              </Button>
+              
+              {card.custom_qr_url && (
+                <Button 
+                  onClick={handleCustomRedirect}
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Özel Sayfaya Git
+                </Button>
               )}
             </div>
-          </motion.div>
+            
+            <p className="text-xs text-gray-400 text-center mt-6">
+              🚀 Ravenkart ile oluşturuldu
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* iOS Style Action Buttons */}
-          <div className="mt-6 space-y-3">
-            {/* Add to Contacts Button - Green iOS Style */}
-            <motion.button
-              onClick={addToContacts}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-green-500 text-white font-semibold rounded-2xl shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-3"
-            >
-              <UserPlus className="w-5 h-5" />
-              <span>Kişilere Ekle</span>
-            </motion.button>
-
-            {/* Add to Home Screen Button */}
-            <motion.button
-              onClick={addToHomeScreen}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-blue-500 text-white font-semibold rounded-2xl shadow-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-3"
-            >
-              <Home className="w-5 h-5" />
-              <span>Ana Ekrana Ekle</span>
-            </motion.button>
-          </div>
-
-          {/* Join Ravenkart Family CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 text-center"
-          >
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-              <h3 className="text-white font-semibold text-lg mb-2">
+        {/* Join Ravenkart CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-6"
+        >
+          <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+            <CardContent className="p-6 text-center">
+              <h3 className="font-bold text-lg mb-2">
                 Sen de Ravenkart Ailesine Katıl!
               </h3>
-              <p className="text-white/70 text-sm mb-4">
+              <p className="text-blue-100 text-sm mb-4">
                 Kendi dijital kartvizitini oluştur ve profesyonel kimliğini dijital dünyaya taşı.
               </p>
-              <motion.a
-                href="/"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="inline-block px-8 py-3 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              <Button 
+                onClick={() => window.location.href = '/'}
+                variant="secondary"
+                size="sm"
               >
                 Hemen Başla
-              </motion.a>
-            </div>
-          </motion.div>
-        </div>
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   )
