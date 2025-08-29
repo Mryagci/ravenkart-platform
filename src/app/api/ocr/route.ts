@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Force Node.js runtime for API calls
+// Force Node.js runtime for API calls with explicit config
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Google Cloud Vision REST API
 async function performGoogleVisionOCR(imageBase64: string) {
@@ -11,6 +12,9 @@ async function performGoogleVisionOCR(imageBase64: string) {
     console.log('Google Vision API key not configured, skipping')
     return null
   }
+  
+  console.log('Google Vision API Key present:', apiKey ? 'YES' : 'NO')
+  console.log('Image data length:', imageBase64.length)
 
   try {
     const body = {
@@ -36,7 +40,13 @@ async function performGoogleVisionOCR(imageBase64: string) {
     )
 
     if (!response.ok) {
-      throw new Error(`Google Vision API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('Google Vision API Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      })
+      throw new Error(`Google Vision API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
@@ -109,72 +119,16 @@ export async function POST(req: NextRequest) {
       console.log('Falling back to Tesseract.js...')
     }
     
-    // Fallback to Tesseract.js
-    try {
-      console.log('Processing with Tesseract.js...')
-      
-      // Dynamic import to avoid Edge runtime issues
-      const Tesseract = await import('tesseract.js')
-      
-      // Create a new image from buffer for Tesseract
-      const imageForTesseract = `data:image/jpeg;base64,${image}`
-      
-      // Create worker with proper configuration for Node.js environment
-      const worker = await Tesseract.default.createWorker('eng+tur', 1, {
-        logger: (m: any) => {
-          if (m.status === 'recognizing text') {
-            console.log(`Tesseract progress: ${Math.round(m.progress * 100)}%`)
-          }
-        }
-      })
-      
-      console.log('Tesseract worker created, recognizing text...')
-      const { data: { text, confidence } } = await worker.recognize(imageForTesseract)
-      
-      console.log('Tesseract recognition complete, terminating worker...')
-      await worker.terminate()
-      
-      console.log('=== TESSERACT OCR RESULTS ===')
-      console.log('Raw text:', JSON.stringify(text))
-      console.log('Text length:', text?.length || 0)
-      console.log('Confidence:', confidence)
-      console.log('============================')
-      
-      if (!text || text.trim().length === 0) {
-        console.log('No text detected by Tesseract')
-        return NextResponse.json(
-          { error: 'No text detected in image by any OCR provider' },
-          { status: 400 }
-        )
-      }
-      
-      console.log('Tesseract OCR completed successfully')
-      console.log('Final extracted text:', text.trim())
-      console.log('Final confidence:', Math.round(confidence))
-      
-      const response = {
-        success: true,
-        text: text.trim(),
-        confidence: Math.round(confidence),
-        provider: 'Tesseract.js',
-        type: 'business_card'
-      }
-      
-      console.log('Sending response:', JSON.stringify(response))
-      return NextResponse.json(response)
-      
-    } catch (tesseractError: any) {
-      console.error('Tesseract OCR Error:', tesseractError)
-      
-      return NextResponse.json(
-        { 
-          error: 'OCR processing failed with all providers',
-          details: tesseractError.message,
-          provider: 'Hybrid OCR - All methods failed'
-        },
-        { status: 500 }
-      )
-    }
+    // For now, skip Tesseract.js fallback to avoid worker issues
+    console.log('Google Vision failed and Tesseract.js temporarily disabled')
+    return NextResponse.json(
+      { 
+        error: 'OCR processing failed - Google Vision API unavailable',
+        details: 'Google Vision API key issue or service error',
+        provider: 'Google Vision REST API'
+      },
+      { status: 500 }
+    )
     
   } catch (error: any) {
     console.error('General OCR Error:', error)
