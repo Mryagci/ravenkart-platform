@@ -21,8 +21,7 @@ interface BusinessCard {
   email?: string
   phone?: string
   website?: string
-  address?: string
-  iban?: string
+  location?: string
   projects?: any[]
   created_at: string
   user_id: string
@@ -47,6 +46,7 @@ export default function VisitorCardPage() {
   const fetchCard = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Kartvizit aranıyor:', cardId)
       
       const { data, error } = await supabase
         .from('cards')
@@ -57,19 +57,28 @@ export default function VisitorCardPage() {
 
       if (error) {
         console.error('Card fetch error:', error)
-        setError('Kartvizit bulunamadı veya aktif değil')
+        console.log('Error details:', error.message, error.code)
+        
+        // Farklı hata türlerine göre mesaj
+        if (error.code === 'PGRST116') {
+          setError('Bu kartvizit bulunamadı. ID doğru mu kontrol edin.')
+        } else {
+          setError(`Kartvizit yüklenirken hata: ${error.message}`)
+        }
         return
       }
 
       if (!data) {
-        setError('Kartvizit bulunamadı')
+        console.log('❌ Data boş')
+        setError('Kartvizit verisi bulunamadı')
         return
       }
 
+      console.log('✅ Kartvizit bulundu:', data.name)
       setCard(data)
     } catch (err) {
       console.error('Fetch error:', err)
-      setError('Kartvizit yüklenirken hata oluştu')
+      setError('Kartvizit yüklenirken beklenmeyen hata oluştu')
     } finally {
       setLoading(false)
     }
@@ -106,7 +115,7 @@ export default function VisitorCardPage() {
       phone: card.phone || '',
       email: card.email || '',
       website: card.website || '',
-      location: card.address || ''
+      location: card.location || ''
     })
   }
 
@@ -228,19 +237,13 @@ export default function VisitorCardPage() {
                 </motion.a>
               )}
               
-              {card.address && (
+              {card.location && (
                 <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                   <MapPin className="w-5 h-5 mr-3 text-red-500" />
-                  <span className="text-gray-700">{card.address}</span>
+                  <span className="text-gray-700">{card.location}</span>
                 </div>
               )}
 
-              {card.iban && (
-                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                  <Building2 className="w-5 h-5 mr-3 text-orange-500" />
-                  <span className="text-gray-700 font-mono text-sm">{card.iban}</span>
-                </div>
-              )}
             </div>
 
             {/* Projects */}
