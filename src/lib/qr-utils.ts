@@ -1,7 +1,7 @@
 import QRCode from 'qrcode'
 
 /**
- * Ziyaretçi sayfası için dinamik URL oluşturur
+ * Ziyaretçi sayfası için dinamik URL oluşturur (Yeni Ravenkart ziyaretçi bölümü)
  * @param cardId - Kart ID'si
  * @returns Ziyaretçi sayfası URL'i
  */
@@ -12,7 +12,8 @@ export function generateVisitorUrl(cardId: string): string {
       ? 'https://www.ravenkart.com' 
       : 'http://localhost:3000')
   
-  return `${baseUrl}/v/${cardId}`
+  // Yeni ziyaretçi bölümü kullan
+  return `${baseUrl}/ziyaretci/${cardId}`
 }
 
 /**

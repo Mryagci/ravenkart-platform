@@ -197,9 +197,9 @@ END:VCARD`
         return;
       }
 
-      // QR kod oluştur - Ravenkart domain'inde visitor sayfasına yönlendiren
+      // QR kod oluştur - Yeni Ravenkart ziyaretçi bölümüne yönlendiren
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const visitorUrl = `${baseUrl}/v/${businessCard.id}`;
+      const visitorUrl = `${baseUrl}/ziyaretci/${businessCard.id}`;
 
       const qrDataUrl = await QRCode.toDataURL(visitorUrl, {
         width: 200,
