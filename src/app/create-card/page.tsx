@@ -239,8 +239,9 @@ export default function CreateCard() {
         return;
       }
 
-      // Preview QR code - will show visitor page URL format  
-      const previewUrl = `${window.location.origin}/v/preview-${Date.now()}`;
+      // Preview QR code - Ravenkart domain'inde visitor page URL format
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const previewUrl = `${baseUrl}/v/preview-${Date.now()}`;
 
       const qrDataUrl = await QRCode.toDataURL(previewUrl, {
         width: 200,
@@ -389,8 +390,9 @@ export default function CreateCard() {
       // QR kod direkt burada oluştur
       const QRCode = (await import('qrcode')).default;
       
-      // Visitor sayfası URL'ini oluştur
-      const visitorUrl = `${window.location.origin}/v/${cardId}`;
+      // Visitor sayfası URL'ini oluştur - Ravenkart domain'i kullan
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const visitorUrl = `${baseUrl}/v/${cardId}`;
       
       // QR kod oluştur
       const qrCodeDataUrl = await QRCode.toDataURL(visitorUrl, {

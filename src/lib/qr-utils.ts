@@ -6,9 +6,11 @@ import QRCode from 'qrcode'
  * @returns Ziyaretçi sayfası URL'i
  */
 export function generateVisitorUrl(cardId: string): string {
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://www.ravenkart.com' 
-    : 'http://localhost:3000'
+  // NEXT_PUBLIC_APP_URL kullan, yoksa NODE_ENV'e göre belirle
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.NODE_ENV === 'production' 
+      ? 'https://www.ravenkart.com' 
+      : 'http://localhost:3000')
   
   return `${baseUrl}/v/${cardId}`
 }
@@ -83,6 +85,7 @@ export async function generateQRCode(
   customUrl?: string
 ): Promise<string> {
   try {
+    // Her zaman Ravenkart domain'inde visitor sayfasını kullan
     const targetUrl = customUrl || generateVisitorUrl(cardId)
     
     const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, {
