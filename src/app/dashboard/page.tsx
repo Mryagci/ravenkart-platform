@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3, Download, Share2, Camera, UserPlus, Home, Smartphone, Scan, Grid, ChevronDown, CreditCard } from 'lucide-react'
+import { QrCode, Plus, Phone, Mail, Globe, MapPin, Edit3, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, BarChart3, Download, Share2, Camera, UserPlus, Home, Smartphone, Scan, Grid, ChevronDown, CreditCard, Edit } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ interface BusinessCard {
   location: string
   iban?: string
   profilePhotos?: string[]
+  logo_url?: string
   backgroundColor?: string
   ribbonPrimaryColor?: string
   ribbonSecondaryColor?: string
@@ -42,6 +43,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const [showLogo, setShowLogo] = useState(false) // false = profil fotoğraf arka planda, logo yuvarlakta
+  const [touchStartX, setTouchStartX] = useState(0)
   
   // VCF Export Function
   const generateVCF = () => {
@@ -301,6 +304,7 @@ END:VCARD`
           location: card.location || '',
           iban: card.iban || '',
           profilePhotos: card.profile_photos || [],
+          logo_url: card.logo_url || null,
           backgroundColor: card.background_color || '#ffffff',
           ribbonPrimaryColor: card.ribbon_primary_color || '#8b5cf6',
           ribbonSecondaryColor: card.ribbon_secondary_color || '#3b82f6',
@@ -422,67 +426,128 @@ END:VCARD`
                     color: businessCard.textColor || '#1f2937'
                   }}
                 >
-                  {/* Full-width Profile Photo - Square with Carousel */}
-                  <div className="w-full aspect-square relative group">
-                    {businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
-                      <>
-                        <img 
-                          src={businessCard.profilePhotos[currentPhotoIndex]} 
-                          alt="Profile" 
-                          className="w-full h-full object-cover cursor-pointer"
-                          onClick={() => {
-                            if (businessCard.profilePhotos && businessCard.profilePhotos.length > 1) {
-                              setCurrentPhotoIndex((prev) => 
-                                prev === businessCard.profilePhotos!.length - 1 ? 0 : prev + 1
-                              );
-                            }
-                          }}
-                        />
-                        
-                        {/* Navigation Dots */}
-                        {businessCard.profilePhotos.length > 1 && (
-                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {businessCard.profilePhotos.map((_, index) => (
-                              <button
-                                key={index}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCurrentPhotoIndex(index);
-                                }}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                  index === currentPhotoIndex 
-                                    ? 'bg-white scale-125' 
-                                    : 'bg-white/60 hover:bg-white/80'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Photo Counter */}
-                        {businessCard.profilePhotos.length > 1 && (
-                          <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                            {currentPhotoIndex + 1}/{businessCard.profilePhotos.length}
-                          </div>
-                        )}
-                      </>
+                  {/* Logo/Profile Photo Container with Animation */}
+                  <div 
+                    className="w-full aspect-square relative group"
+                    onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+                    onTouchEnd={(e) => {
+                      const touchEndX = e.changedTouches[0].clientX
+                      const difference = touchStartX - touchEndX
+                      
+                      if (Math.abs(difference) > 80) { // 80px minimum swipe distance
+                        setShowLogo(!showLogo)
+                      }
+                    }}
+                  >
+                    {/* Background - Logo or Profile based on showLogo state */}
+                    {showLogo ? (
+                      /* Logo in background when showLogo=true */
+                      businessCard.logo_url ? (
+                        <div className="w-full h-full bg-white flex items-center justify-center p-8">
+                          <img 
+                            src={businessCard.logo_url} 
+                            alt="Company Logo" 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                          <div className="w-32 h-32 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full"></div>
+                        </div>
+                      )
                     ) : (
-                      <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                        <User className="w-24 h-24 text-white/60" />
-                      </div>
+                      /* Profile photo in background when showLogo=false */
+                      businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
+                        <>
+                          <img 
+                            src={businessCard.profilePhotos[currentPhotoIndex]} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover cursor-pointer"
+                            onClick={() => {
+                              if (businessCard.profilePhotos && businessCard.profilePhotos.length > 1) {
+                                setCurrentPhotoIndex((prev) => 
+                                  prev === businessCard.profilePhotos!.length - 1 ? 0 : prev + 1
+                                );
+                              }
+                            }}
+                          />
+                          
+                          {/* Navigation Dots - only show when profile is in background */}
+                          {businessCard.profilePhotos.length > 1 && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {businessCard.profilePhotos.map((_, index) => (
+                                <button
+                                  key={index}
+                                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCurrentPhotoIndex(index);
+                                  }}
+                                  className={`w-2 h-2 rounded-full transition-all ${
+                                    index === currentPhotoIndex 
+                                      ? 'bg-white scale-125' 
+                                      : 'bg-white/60 hover:bg-white/80'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Photo Counter - only show when profile is in background */}
+                          {businessCard.profilePhotos.length > 1 && (
+                            <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                              {currentPhotoIndex + 1}/{businessCard.profilePhotos.length}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                          <User className="w-24 h-24 text-white/60" />
+                        </div>
+                      )
                     )}
+                    
                   </div>
 
                   {/* 30px Ribbon with Gradient */}
                   <div 
-                    className="h-8 border-t border-white/20"
+                    className="h-8 border-t border-white/20 relative"
                     style={{
                       background: `linear-gradient(135deg, ${businessCard.ribbonPrimaryColor || '#8b5cf6'} 0%, ${businessCard.ribbonSecondaryColor || '#3b82f6'} 100%)`
                     }}
-                  />
+                  >
+                    {/* Circle overlay on ribbon - Shows opposite of background */}
+                    <div 
+                      className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => setShowLogo(!showLogo)}
+                    >
+                      {!showLogo ? (
+                        /* Show logo in circle when profile is in background */
+                        businessCard.logo_url ? (
+                          <img 
+                            src={businessCard.logo_url} 
+                            alt="Company Logo" 
+                            className="w-32 h-32 object-contain"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
+                        )
+                      ) : (
+                        /* Show profile photo in circle when logo is in background */
+                        businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
+                          <img 
+                            src={businessCard.profilePhotos[currentPhotoIndex]} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
+                        )
+                      )}
+                    </div>
+                  </div>
 
-                  {/* Content Section with larger fonts */}
-                  <div className="p-6 space-y-4">
+                  {/* Content Section with larger fonts - Adjusted spacing for larger logo circle */}
+                  <div className="pt-24 px-6 pb-6 space-y-4">
                     {/* Name, Title, Company */}
                     <div className="text-center space-y-2">
                       <h2 className="text-2xl font-bold" style={{ color: businessCard.textColor || '#1f2937' }}>{businessCard.name}</h2>
@@ -641,8 +706,24 @@ END:VCARD`
                 </motion.div>
               </div>
 
+              {/* Edit Button */}
+              <div className="max-w-sm mx-auto px-4 mt-6">
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/create-card')}
+                  className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                  <Edit className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Kartviziti Düzenle</span>
+                </motion.button>
+              </div>
+
               {/* Action Buttons */}
-              <div className="space-y-4 max-w-sm mx-auto px-4">
+              <div className="space-y-4 max-w-sm mx-auto px-4 mt-8">
                 {/* Kişilere Ekle Button */}
                 <motion.button
                   whileHover={{ scale: 1.02, y: -2 }}

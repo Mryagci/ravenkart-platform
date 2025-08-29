@@ -108,18 +108,8 @@ export default function CreateCard() {
         email: user.email || ''
       }));
 
-      // Load existing business card data if available
-      const savedCard = localStorage.getItem('business_card');
-      if (savedCard) {
-        const cardData = JSON.parse(savedCard);
-        if (cardData.user_id === user.id) {
-          setCardData(cardData);
-          // If there are multiple photos, set the first one as current
-          if (cardData.profilePhotos && cardData.profilePhotos.length > 0) {
-            setCurrentPhotoIndex(0);
-          }
-        }
-      }
+      // Load existing business card data from Supabase
+      await loadExistingCard(user.id);
       
     } catch (error) {
       console.error('Error:', error);
@@ -153,6 +143,65 @@ export default function CreateCard() {
     return tr + (digits.length > 0 ? ' ' + formatted : '');
   };
 
+  const loadExistingCard = async (userId: string) => {
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      console.log('🔍 Mevcut kartvizit aranıyor...', userId);
+
+      const { data, error } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Kartvizit yükleme hatası:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const card = data[0];
+        console.log('✅ Mevcut kartvizit yüklendi:', card.name);
+
+        // Supabase verisini form formatına dönüştür
+        setCardData({
+          name: card.name || '',
+          title: card.title || '',
+          company: card.company || '',
+          companyLogo: card.logo_url || '',
+          phone: card.phone || '',
+          email: card.email || '',
+          website: card.website || '',
+          location: card.location || '',
+          iban: card.iban || '',
+          profilePhotos: card.profile_photos || [],
+          backgroundColor: card.background_color || '#ffffff',
+          ribbonPrimaryColor: card.ribbon_primary_color || '#8b5cf6',
+          ribbonSecondaryColor: card.ribbon_secondary_color || '#3b82f6',
+          textColor: card.text_color || '#1f2937',
+          socialMedia: card.social_media || {},
+          projects: card.projects || []
+        });
+
+        // İlk profil fotoğrafını ayarla
+        if (card.profile_photos && card.profile_photos.length > 0) {
+          setCurrentPhotoIndex(0);
+        }
+      } else {
+        console.log('ℹ️ Henüz bir kartvizit oluşturulmamış');
+      }
+    } catch (error) {
+      console.error('Kartvizit yükleme sırasında hata:', error);
+    }
+  };
+
   const handleInputChange = (field: keyof BusinessCardData, value: string) => {
     let processedValue = value;
     
@@ -167,7 +216,7 @@ export default function CreateCard() {
     }));
   }
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'logo') => {
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'logo') => {
     const files = event.target.files;
     if (!files) return;
 
@@ -192,17 +241,36 @@ export default function CreateCard() {
         };
         reader.readAsDataURL(file);
       });
-    } else {
+    } else if (type === 'logo') {
       const file = files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        setCardData(prev => ({
-          ...prev,
-          companyLogo: base64
-        }));
-      };
-      reader.readAsDataURL(file);
+      if (file && file.type.startsWith('image/')) {
+        try {
+          console.log('📤 Logo dosyası yükleniyor...', file.name);
+          
+          if (!user?.id) {
+            alert('Lütfen önce giriş yapın');
+            return;
+          }
+
+          // Logo yükleme utility'sini import et
+          const { uploadLogo } = await import('../../lib/storage-utils');
+          
+          // Logo dosyasını Supabase Storage'a yükle
+          const logoUrl = await uploadLogo(file, user.id);
+          
+          // State'i güncelle
+          setCardData(prev => ({
+            ...prev,
+            companyLogo: logoUrl
+          }));
+          
+          console.log('✅ Logo başarıyla yüklendi:', logoUrl);
+          
+        } catch (error) {
+          console.error('Logo yükleme hatası:', error);
+          alert(`Logo yüklenirken hata oluştu: ${(error as Error).message}`);
+        }
+      }
     }
   }
 
@@ -448,17 +516,33 @@ export default function CreateCard() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      // Generate unique username with timestamp and random number
-      const baseUsername = cardData.name.toLowerCase()
-        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special chars
-        .replace(/\s+/g, '') // Remove spaces
-        .substring(0, 10); // Limit length to make room for timestamp
-      
-      const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // 3-digit random number
-      const username = `${baseUsername}${timestamp}${randomNum}`;
+      // Check if user already has a card
+      const { data: existingCards } = await supabase
+        .from('cards')
+        .select('id, username')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .limit(1);
 
-      console.log('📝 Oluşturulan username:', username);
+      const isUpdate = existingCards && existingCards.length > 0;
+      let username = '';
+
+      if (isUpdate) {
+        // Update existing card - keep existing username
+        username = existingCards[0].username;
+        console.log('📝 Mevcut kartvizit güncelleniyor:', username);
+      } else {
+        // Create new card - generate new username
+        const baseUsername = cardData.name.toLowerCase()
+          .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special chars
+          .replace(/\s+/g, '') // Remove spaces
+          .substring(0, 10); // Limit length to make room for timestamp
+        
+        const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+        const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // 3-digit random number
+        username = `${baseUsername}${timestamp}${randomNum}`;
+        console.log('📝 Yeni kartvizit oluşturuluyor:', username);
+      }
 
       // Prepare card data for database
       const cardDataForDB = {
@@ -467,7 +551,7 @@ export default function CreateCard() {
         name: cardData.name.trim(),
         title: cardData.title?.trim() || null,
         company: cardData.company?.trim() || null,
-        company_logo: cardData.companyLogo || null,
+        logo_url: cardData.companyLogo || null,
         phone: cardData.phone?.trim() || null,
         email: cardData.email?.trim() || null,
         website: cardData.website?.trim() || null,
@@ -483,58 +567,81 @@ export default function CreateCard() {
         is_active: true
       };
 
-      // Insert card to database with retry for unique constraint
-      let insertedCard = null;
-      let retryCount = 0;
-      const maxRetries = 3;
+      // Update or Insert card based on whether it exists
+      let savedCard = null;
 
-      while (!insertedCard && retryCount < maxRetries) {
-        try {
-          // If this is a retry, generate a new username
-          if (retryCount > 0) {
-            const newTimestamp = Date.now().toString().slice(-6);
-            const newRandomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-            cardDataForDB.username = `${baseUsername}${newTimestamp}${newRandomNum}`;
-            console.log(`Username çakışması, yeni deneme: ${cardDataForDB.username}`);
-          }
+      if (isUpdate) {
+        // Update existing card
+        const { data, error: updateError } = await supabase
+          .from('cards')
+          .update(cardDataForDB)
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .select('id')
+          .single();
 
-          const { data, error: insertError } = await supabase
-            .from('cards')
-            .insert(cardDataForDB)
-            .select('id')
-            .single();
+        if (updateError) {
+          throw new Error(`Kartvizit güncellenirken hata oluştu: ${updateError.message}`);
+        }
 
-          if (insertError) {
-            // If it's a username conflict, retry
-            if (insertError.code === '23505' && insertError.message.includes('cards_username_key')) {
-              retryCount++;
-              console.log(`Username çakışması (deneme ${retryCount}/${maxRetries})`);
-              continue;
+        savedCard = data;
+        console.log('✅ Kartvizit güncellendi:', savedCard.id);
+      } else {
+        // Insert new card with retry for unique constraint
+        let retryCount = 0;
+        const maxRetries = 3;
+        const baseUsername = cardData.name.toLowerCase()
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/\s+/g, '')
+          .substring(0, 10);
+
+        while (!savedCard && retryCount < maxRetries) {
+          try {
+            // Generate new username for retries
+            if (retryCount > 0) {
+              const newTimestamp = Date.now().toString().slice(-6);
+              const newRandomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+              cardDataForDB.username = `${baseUsername}${newTimestamp}${newRandomNum}`;
+              console.log(`Username çakışması, yeni deneme: ${cardDataForDB.username}`);
             }
-            // Other errors, throw immediately
-            throw new Error(`Veritabanı hatası: ${insertError.message}`);
-          }
 
-          insertedCard = data;
-          break;
+            const { data, error: insertError } = await supabase
+              .from('cards')
+              .insert(cardDataForDB)
+              .select('id')
+              .single();
 
-        } catch (error) {
-          if (retryCount >= maxRetries - 1) {
-            throw error;
+            if (insertError) {
+              if (insertError.code === '23505' && insertError.message.includes('cards_username_key')) {
+                retryCount++;
+                console.log(`Username çakışması (deneme ${retryCount}/${maxRetries})`);
+                continue;
+              }
+              throw new Error(`Veritabanı hatası: ${insertError.message}`);
+            }
+
+            savedCard = data;
+            console.log('✅ Yeni kartvizit oluşturuldu:', savedCard.id);
+            break;
+
+          } catch (error) {
+            if (retryCount >= maxRetries - 1) {
+              throw error;
+            }
+            retryCount++;
           }
-          retryCount++;
         }
       }
 
-      if (!insertedCard) {
+      if (!savedCard) {
         throw new Error('Kartvizit kaydedilemedi');
       }
 
-      console.log('✅ Kartvizit başarıyla kaydedildi:', insertedCard.id);
-      console.log('📊 Kaydedilen veri:', insertedCard);
+      console.log('✅ Kartvizit başarıyla kaydedildi:', savedCard.id);
+      console.log('📊 Kaydedilen veri:', savedCard);
       
       // QR kod oluştur ve kaydet
-      await createAndSaveQRCode(insertedCard.id, cardData);
+      await createAndSaveQRCode(savedCard.id, cardData);
       
       // Show success message
       setSaveSuccess(true);
@@ -728,21 +835,44 @@ export default function CreateCard() {
                         <Building className="w-8 h-8 text-white/60" />
                       )}
                     </div>
-                    <div>
-                      <input
-                        type="file"
-                        id="logo-upload"
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(e, 'logo')}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="logo-upload"
-                        className="px-4 py-2 bg-white/20 border border-white/30 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer inline-block"
-                      >
-                        Logo Yükle
-                      </label>
-                      <p className="text-white/60 text-xs mt-1">JPG, PNG, SVG</p>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          id="logo-upload"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(e, 'logo')}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="logo-upload"
+                          className="px-4 py-2 bg-white/20 border border-white/30 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer inline-block text-sm"
+                        >
+                          <Upload className="w-4 h-4 inline mr-1" />
+                          Logo Yükle
+                        </label>
+                        {cardData.companyLogo && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                if (user?.id && cardData.companyLogo) {
+                                  const { deleteLogo } = await import('../../lib/storage-utils');
+                                  await deleteLogo(cardData.companyLogo, user.id);
+                                }
+                                setCardData(prev => ({ ...prev, companyLogo: '' }));
+                                console.log('✅ Logo silindi');
+                              } catch (error) {
+                                console.error('Logo silme hatası:', error);
+                              }
+                            }}
+                            className="px-3 py-2 bg-red-500/20 border border-red-400/30 text-red-200 rounded-lg hover:bg-red-500/30 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-white/60 text-xs">JPG, PNG, SVG, WebP (Max: 5MB)</p>
                     </div>
                   </div>
                 </div>
