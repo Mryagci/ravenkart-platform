@@ -138,9 +138,13 @@ END:VCARD`
       const canvas = await html2canvas(cardElement, {
         backgroundColor: businessCard.backgroundColor || '#ffffff',
         scale: 2,
-        logging: false,
+        logging: true,
         useCORS: false,
-        allowTaint: false
+        allowTaint: false,
+        width: cardElement.scrollWidth,
+        height: cardElement.scrollHeight,
+        scrollX: 0,
+        scrollY: 0
       })
 
       console.log('Canvas oluşturuldu, resim kaydediliyor...')
@@ -557,26 +561,26 @@ END:VCARD`
                     {/* Contact Info */}
                     <div className="space-y-2">
                       {businessCard.phone && (
-                        <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
-                          <Phone className="w-4 h-4" />
+                        <div className="flex items-center justify-center gap-3 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
+                          <Phone className="w-4 h-4 flex-shrink-0" />
                           <span className="text-sm">{businessCard.phone}</span>
                         </div>
                       )}
                       {businessCard.email && (
-                        <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
-                          <Mail className="w-4 h-4" />
+                        <div className="flex items-center justify-center gap-3 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
+                          <Mail className="w-4 h-4 flex-shrink-0" />
                           <span className="text-sm">{businessCard.email}</span>
                         </div>
                       )}
                       {businessCard.website && (
-                        <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
-                          <Globe className="w-4 h-4" />
+                        <div className="flex items-center justify-center gap-3 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
+                          <Globe className="w-4 h-4 flex-shrink-0" />
                           <span className="text-sm">{businessCard.website}</span>
                         </div>
                       )}
                       {businessCard.location && (
-                        <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
-                          <MapPin className="w-4 h-4" />
+                        <div className="flex items-center justify-center gap-3 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
+                          <MapPin className="w-4 h-4 flex-shrink-0" />
                           <span className="text-sm">{businessCard.location}</span>
                         </div>
                       )}

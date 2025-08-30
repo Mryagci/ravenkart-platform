@@ -10,7 +10,7 @@ export default function Pricing() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly')
 
   useEffect(() => {
     checkUser()

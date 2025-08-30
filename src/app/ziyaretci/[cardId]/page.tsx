@@ -200,44 +200,82 @@ export default function ZiyaretciKartvizitSayfasi() {
       const html2canvas = (await import('html2canvas')).default
       const element = document.querySelector('#business-card')
       
-      if (element) {
-        // QR kod yüklenene kadar bekle
-        if (qrCodeUrl) {
-          await new Promise(resolve => setTimeout(resolve, 500)) // 0.5 saniye bekle
-        }
-        
-        // Gördüğünüz şeyin tam screenshot'unu al
-        const canvas = await html2canvas(element as HTMLElement, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          logging: false,
-          useCORS: false,
-          allowTaint: false
-        })
-        
-        // Mobil cihaz kontrolü
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-        const isAndroid = /Android/.test(navigator.userAgent)
-        
-        if (isMobile) {
-          // Mobil cihazlarda galeriye kaydet
-          await saveToMobileGallery(canvas, card.name)
-        } else {
-          // Desktop'ta normal download
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `${card.name.replace(/\s+/g, '-').toLowerCase()}-kartvizit.png`
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              URL.revokeObjectURL(url)
-            }
-          }, 'image/png', 1.0)
-        }
+      if (!element) {
+        console.error('Business card element not found!')
+        alert('Kartvizit elementi bulunamadı')
+        return
+      }
+      
+      console.log('Element bulundu:', element)
+      const rect = element.getBoundingClientRect()
+      console.log('Element dimensions:', rect)
+      
+      // Element'i kesinlikle viewport'a getir
+      console.log('Element viewport dışında, manuel scroll yapılıyor...')
+      const elementTop = element.offsetTop
+      const elementHeight = element.offsetHeight
+      
+      // Sayfayı element'in başına scroll et
+      window.scrollTo({
+        top: elementTop - 50, // 50px margin
+        behavior: 'instant'
+      })
+      
+      // Scroll sonrası bekle
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      const newRect = element.getBoundingClientRect()
+      console.log('Manuel scroll sonrası pozisyon:', newRect)
+      
+      // Yuvarlak elementi screenshot sırasında gizle
+      const circularContainer = element.querySelector('#circular-logo-container')
+      let originalVisibility = ''
+      
+      if (circularContainer) {
+        const circularEl = circularContainer as HTMLElement
+        originalVisibility = circularEl.style.visibility
+        circularEl.style.visibility = 'hidden' // Gizle ama yer kaplamaya devam et
+        console.log('Yuvarlak element gizlendi')
+      }
+      
+      // html2canvas - yuvarlak element görünmez
+      const canvas = await html2canvas(element as HTMLElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        width: element.offsetWidth,
+        height: element.offsetHeight
+      })
+      
+      // Yuvarlak elementi geri göster
+      if (circularContainer) {
+        const circularEl = circularContainer as HTMLElement
+        circularEl.style.visibility = originalVisibility
+        console.log('Yuvarlak element geri gösterildi')
+      }
+      
+      console.log('Canvas oluşturuldu:', canvas.width, 'x', canvas.height)
+      
+      // Mobil cihaz kontrolü
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      
+      if (isMobile) {
+        // Mobil cihazlarda galeriye kaydet
+        await saveToMobileGallery(canvas, card.name)
+      } else {
+        // Desktop'ta normal download
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `${card.name.replace(/\s+/g, '-').toLowerCase()}-kartvizit.png`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }
+        }, 'image/png', 1.0)
       }
     } catch (error) {
       console.error('Screenshot alınamadı:', error)
@@ -511,6 +549,7 @@ export default function ZiyaretciKartvizitSayfasi() {
             {/* Circle overlay on ribbon - Only show if logo exists */}
             {card.logo_url && (
               <div 
+                id="circular-logo-container"
                 className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => setShowLogo(!showLogo)}
               >
@@ -565,20 +604,20 @@ export default function ZiyaretciKartvizitSayfasi() {
               {card.email && (
                 <a 
                   href={`mailto:${card.email}`}
-                  className="flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity" 
+                  className="flex items-center justify-center gap-3 opacity-80 hover:opacity-100 transition-opacity" 
                   style={{ color: card.text_color || '#1f2937' }}
                 >
-                  <Mail className="w-4 h-4" />
+                  <Mail className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm">{card.email}</span>
                 </a>
               )}
               {card.phone && (
                 <a 
                   href={`tel:${card.phone}`}
-                  className="flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity" 
+                  className="flex items-center justify-center gap-3 opacity-80 hover:opacity-100 transition-opacity" 
                   style={{ color: card.text_color || '#1f2937' }}
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm">{card.phone}</span>
                 </a>
               )}
@@ -587,16 +626,16 @@ export default function ZiyaretciKartvizitSayfasi() {
                   href={card.website.startsWith('http') ? card.website : `https://${card.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 opacity-80 hover:opacity-100 transition-opacity" 
+                  className="flex items-center justify-center gap-3 opacity-80 hover:opacity-100 transition-opacity" 
                   style={{ color: card.text_color || '#1f2937' }}
                 >
-                  <Globe className="w-4 h-4" />
+                  <Globe className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm">{card.website}</span>
                 </a>
               )}
               {card.location && (
-                <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: card.text_color || '#1f2937' }}>
-                  <MapPin className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-3 opacity-80" style={{ color: card.text_color || '#1f2937' }}>
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm">{card.location}</span>
                 </div>
               )}

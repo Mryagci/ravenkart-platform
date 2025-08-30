@@ -1630,44 +1630,50 @@ export default function CardScannerPage() {
                             </div>
                           </div>
                           
-                          <div className="flex gap-2 mt-3">
+                          {/* Mobile-optimized button grid */}
+                          <div className="grid grid-cols-2 gap-2 mt-3 sm:flex sm:flex-wrap">
                             {/* OCR Button - Show only if card is empty and we have image */}
                             {(!card.name || card.name === '') && card.imageData && (
-                              <div className="flex flex-col gap-1">
-                                <motion.button
-                                  onClick={() => performSmartOCR(card.imageData!, card.id)}
-                                  disabled={ocrProcessing}
-                                  className="px-3 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-500/30 transition-all duration-300 flex items-center gap-1 text-sm disabled:opacity-50"
-                                  whileHover={{ scale: ocrProcessing ? 1 : 1.05 }}
-                                  whileTap={{ scale: ocrProcessing ? 1 : 0.95 }}
-                                >
-                                  <Scan className="w-3 h-3" />
+                              <motion.button
+                                onClick={() => performSmartOCR(card.imageData!, card.id)}
+                                disabled={ocrProcessing}
+                                className="px-3 py-3 bg-purple-500/20 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50 min-h-[48px] col-span-2 sm:col-span-1"
+                                whileHover={{ scale: ocrProcessing ? 1 : 1.05 }}
+                                whileTap={{ scale: ocrProcessing ? 1 : 0.95 }}
+                              >
+                                <Scan className="w-4 h-4" />
+                                <span className="font-medium">
                                   {ocrProcessing ? 'OCR Çalışıyor...' : 'OCR ile Doldur'}
-                                </motion.button>
-                              </div>
+                                </span>
+                              </motion.button>
                             )}
                             
-                            
+                            {/* Edit Button */}
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => editCard(card)}
-                              className="px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-400/30 rounded-lg hover:bg-blue-500/30 transition-all duration-300 flex items-center gap-1 text-sm"
+                              className="px-3 py-3 bg-blue-500/20 text-blue-400 border border-blue-400/30 rounded-lg hover:bg-blue-500/30 transition-all duration-300 flex items-center justify-center gap-2 text-sm min-h-[48px]"
                             >
-                              <Edit3 className="w-3 h-3" />
-                              Düzenle
+                              <Edit3 className="w-4 h-4" />
+                              <span className="font-medium sm:inline">Düzenle</span>
                             </motion.button>
                             
+                            {/* Save to Collection Button */}
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() => saveToCollection(card)}
-                              className="px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-400/30 rounded-lg hover:bg-green-500/30 transition-all duration-300 flex items-center gap-1 text-sm"
+                              className="px-3 py-3 bg-green-500/20 text-green-400 border border-green-400/30 rounded-lg hover:bg-green-500/30 transition-all duration-300 flex items-center justify-center gap-2 text-sm min-h-[48px]"
                             >
-                              <Save className="w-3 h-3" />
-                              Kolleksiyona Ekle
+                              <Save className="w-4 h-4" />
+                              <span className="font-medium">
+                                <span className="sm:hidden">Kaydet</span>
+                                <span className="hidden sm:inline">Kolleksiyona Ekle</span>
+                              </span>
                             </motion.button>
                             
+                            {/* Crop Button */}
                             {card.imageData && (
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
@@ -1694,10 +1700,10 @@ export default function CardScannerPage() {
                                     img.src = card.imageData!
                                   }, 100)
                                 }}
-                                className="px-3 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-500/30 transition-all duration-300 flex items-center gap-1 text-sm"
+                                className="px-3 py-3 bg-purple-500/20 text-purple-400 border border-purple-400/30 rounded-lg hover:bg-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2 text-sm min-h-[48px] col-span-2 sm:col-span-1"
                               >
-                                <Crop className="w-3 h-3" />
-                                Kırp
+                                <Crop className="w-4 h-4" />
+                                <span className="font-medium">Kırp</span>
                               </motion.button>
                             )}
                           </div>
@@ -1830,7 +1836,8 @@ export default function CardScannerPage() {
                       
                       <canvas ref={cropCanvasRef} className="hidden" />
                       
-                      <div className="flex justify-between gap-4">
+                      {/* Mobile-optimized modal buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
@@ -1838,7 +1845,7 @@ export default function CardScannerPage() {
                             setCropMode(false)
                             setEditingCard(null)
                           }}
-                          className="px-4 py-2 bg-gray-500/20 text-gray-400 border border-gray-400/30 rounded-xl hover:bg-gray-500/30 transition-all duration-300"
+                          className="px-4 py-3 bg-gray-500/20 text-gray-400 border border-gray-400/30 rounded-xl hover:bg-gray-500/30 transition-all duration-300 min-h-[48px] flex items-center justify-center"
                         >
                           İptal
                         </motion.button>
@@ -1847,7 +1854,7 @@ export default function CardScannerPage() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={applyCrop}
-                          className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2"
+                          className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 flex items-center justify-center gap-2 min-h-[48px]"
                         >
                           <Crop className="w-4 h-4" />
                           Kırp ve Kaydet
@@ -1973,12 +1980,13 @@ export default function CardScannerPage() {
                         </div>
                       )}
 
-                      <div className="flex justify-between gap-4 pt-4">
+                      {/* Mobile-optimized modal buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setEditingCard(null)}
-                          className="px-4 py-2 bg-gray-500/20 text-gray-400 border border-gray-400/30 rounded-xl hover:bg-gray-500/30 transition-all duration-300"
+                          className="px-4 py-3 bg-gray-500/20 text-gray-400 border border-gray-400/30 rounded-xl hover:bg-gray-500/30 transition-all duration-300 min-h-[48px] flex items-center justify-center"
                         >
                           İptal
                         </motion.button>
@@ -1987,10 +1995,10 @@ export default function CardScannerPage() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => saveEditedCard(editingCard)}
-                          className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center gap-2"
+                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center gap-2 min-h-[48px]"
                         >
                           <Save className="w-4 h-4" />
-                          Değişiklikleri Kaydet
+                          <span className="font-medium">Kaydet</span>
                         </motion.button>
                       </div>
                     </div>
