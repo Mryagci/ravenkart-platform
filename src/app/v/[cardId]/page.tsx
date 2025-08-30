@@ -130,12 +130,10 @@ export default function VisitorCardPage() {
       if (element) {
         const canvas = await html2canvas(element as HTMLElement, {
           backgroundColor: '#ffffff',
-          scale: 3,
+          scale: 2,
           logging: false,
-          useCORS: true,
-          allowTaint: true,
-          width: element.scrollWidth,
-          height: element.scrollHeight
+          useCORS: false,
+          allowTaint: false
         })
         
         // Mobil cihaz kontrolü

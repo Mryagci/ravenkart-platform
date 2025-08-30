@@ -137,13 +137,10 @@ END:VCARD`
       
       const canvas = await html2canvas(cardElement, {
         backgroundColor: businessCard.backgroundColor || '#ffffff',
-        scale: 2, // High resolution
-        useCORS: true,
-        allowTaint: false,
-        height: cardElement.offsetHeight,
-        width: cardElement.offsetWidth,
-        scrollX: 0,
-        scrollY: 0
+        scale: 2,
+        logging: false,
+        useCORS: false,
+        allowTaint: false
       })
 
       console.log('Canvas oluşturuldu, resim kaydediliyor...')

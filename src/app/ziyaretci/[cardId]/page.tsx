@@ -22,6 +22,7 @@ import {
   Facebook,
   MessageCircle
 } from 'lucide-react'
+import QRCodeLib from 'qrcode'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,6 +72,7 @@ export default function ZiyaretciKartvizitSayfasi() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
   const [showLogo, setShowLogo] = useState(false) // false = profil fotoğraf arka planda, logo yuvarlakta
   const [touchStartX, setTouchStartX] = useState(0)
 
@@ -80,6 +82,39 @@ export default function ZiyaretciKartvizitSayfasi() {
       trackVisit()
     }
   }, [cardId])
+
+  useEffect(() => {
+    if (card) {
+      generateQRCode()
+    }
+  }, [card])
+
+  const generateQRCode = async () => {
+    if (!card) return
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+      let visitorUrl = `${baseUrl}/ziyaretci/${card.id}`
+      
+      if (!visitorUrl.startsWith('http')) {
+        visitorUrl = 'https://' + visitorUrl
+      }
+      
+      const qrDataUrl = await QRCodeLib.toDataURL(visitorUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: card.text_color || '#1f2937',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      })
+      
+      setQrCodeUrl(qrDataUrl)
+    } catch (error) {
+      console.error('QR kod oluşturma hatası:', error)
+    }
+  }
 
   const fetchCard = async () => {
     try {
@@ -166,16 +201,18 @@ export default function ZiyaretciKartvizitSayfasi() {
       const element = document.querySelector('#business-card')
       
       if (element) {
-        // Yüksek kaliteli screenshot al
+        // QR kod yüklenene kadar bekle
+        if (qrCodeUrl) {
+          await new Promise(resolve => setTimeout(resolve, 500)) // 0.5 saniye bekle
+        }
+        
+        // Gördüğünüz şeyin tam screenshot'unu al
         const canvas = await html2canvas(element as HTMLElement, {
           backgroundColor: '#ffffff',
-          scale: 3, // Daha yüksek kalite
+          scale: 2,
           logging: false,
-          useCORS: true,
-          allowTaint: true,
-          foreignObjectRendering: true,
-          width: element.scrollWidth,
-          height: element.scrollHeight
+          useCORS: false,
+          allowTaint: false
         })
         
         // Mobil cihaz kontrolü
@@ -652,10 +689,18 @@ export default function ZiyaretciKartvizitSayfasi() {
             {/* QR Code Section - Same as Dashboard */}
             <div className="flex justify-center pt-4">
               <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
-                <div className="text-xs text-center p-2" style={{ color: card.text_color || '#1f2937' }}>
-                  <div className="mb-1">📱</div>
-                  <div>QR ile paylaş</div>
-                </div>
+                {qrCodeUrl ? (
+                  <img 
+                    src={qrCodeUrl} 
+                    alt="QR Code" 
+                    className="w-full h-full object-contain p-2"
+                  />
+                ) : (
+                  <div className="text-xs text-center p-2" style={{ color: card.text_color || '#1f2937' }}>
+                    <div className="mb-1">📱</div>
+                    <div>QR ile paylaş</div>
+                  </div>
+                )}
               </div>
             </div>
             
