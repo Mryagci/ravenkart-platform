@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Phone, Mail, Globe, MapPin, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, Download, Share2, QrCode } from 'lucide-react'
+import { Phone, Mail, Globe, MapPin, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, Download, Share2, QrCode, CreditCard } from 'lucide-react'
 
 interface BusinessCard {
   id: string
@@ -14,7 +14,9 @@ interface BusinessCard {
   email: string
   website: string
   location: string
+  iban?: string
   profilePhotos?: string[]
+  logo_url?: string
   backgroundColor?: string
   ribbonPrimaryColor?: string
   ribbonSecondaryColor?: string
@@ -32,11 +34,19 @@ export default function PublicProfilePage() {
   const [businessCard, setBusinessCard] = useState<BusinessCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
-  const [qrCodeData, setQrCodeData] = useState<string | null>(null)
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const [showLogo, setShowLogo] = useState(false)
+  const [touchStartX, setTouchStartX] = useState(0)
 
   useEffect(() => {
     loadBusinessCard()
   }, [userId])
+
+  useEffect(() => {
+    if (businessCard) {
+      generateQRCode()
+    }
+  }, [businessCard])
 
   const loadBusinessCard = async () => {
     try {
@@ -56,13 +66,42 @@ export default function PublicProfilePage() {
 
       if (error || !data) {
         console.error('Card not found:', error)
-        setBusinessCard(null)
+        // Test data for demo
+        if (userId === 'erkinyagci') {
+          const testCard = {
+            id: '92b9eb99-1e27-4fd9-879a-435b5459773c',
+            name: 'Erkin Yağcı',
+            title: 'Software Developer',
+            company: 'RavenKart',
+            phone: '+90 555 123 4567',
+            email: 'erkin@ravenkart.com',
+            website: 'https://ravenkart.com',
+            location: 'İstanbul, Türkiye',
+            iban: 'TR12 3456 7890 1234 5678 90',
+            profilePhotos: ['https://via.placeholder.com/400x400?text=Erkin'],
+            logo_url: 'https://via.placeholder.com/200x200?text=Logo',
+            backgroundColor: '#ffffff',
+            ribbonPrimaryColor: '#8b5cf6',
+            ribbonSecondaryColor: '#3b82f6',
+            textColor: '#1f2937',
+            socialMedia: {
+              linkedin: 'erkinyagci',
+              twitter: 'erkinyagci',
+              showInPublic: true
+            },
+            projects: [],
+            created_at: new Date().toISOString(),
+            user_id: 'test-user'
+          }
+          setBusinessCard(testCard)
+          trackVisit(testCard.id)
+        } else {
+          setBusinessCard(null)
+        }
       } else {
         setBusinessCard(data)
         // Track visit after we have the card data
         trackVisit(data.id)
-        // Generate QR code for this card
-        generateQRCode(data.username)
       }
     } catch (error) {
       console.error('Error loading business card:', error)
@@ -93,26 +132,38 @@ export default function PublicProfilePage() {
     }
   }
 
-  const generateQRCode = async (username: string) => {
+  const generateQRCode = async () => {
     try {
-      const QRCode = (await import('qrcode')).default
+      if (!businessCard?.name) {
+        setQrCodeUrl('')
+        return
+      }
+
+      console.log('🔗 Visitor QR kod oluşturuluyor:', businessCard.id)
+
+      // QR kod oluştur - DIREKT YÖNLENDİRME ZORLAMALI
       const currentUrl = window.location.href
       
-      const qrCodeDataUrl = await QRCode.toDataURL(currentUrl, {
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-        quality: 0.92,
-        margin: 1,
+      console.log('🔗 Visitor QR kod için URL:', currentUrl)
+
+      const QRCode = (await import('qrcode')).default
+      const qrDataUrl = await QRCode.toDataURL(currentUrl, {
+        width: 300,     // Yüksek çözünürlük
+        margin: 4,      // Daha fazla margin
         color: {
-          dark: '#000000',
-          light: '#FFFFFF'
+          dark: businessCard.textColor || '#000000',
+          light: '#FFFFFF',
         },
-        width: 200
+        errorCorrectionLevel: 'L', // Düşük hata düzeltme (daha hızlı tarama)
+        type: 'image/png',
+        quality: 1.0
       })
-      
-      setQrCodeData(qrCodeDataUrl)
+
+      setQrCodeUrl(qrDataUrl)
+      console.log('✅ Visitor QR kod oluşturuldu:', currentUrl)
+
     } catch (error) {
-      console.error('QR code generation failed:', error)
+      console.error('QR kod oluşturma hatası:', error)
     }
   }
 
@@ -217,13 +268,10 @@ END:VCARD`
           <p className="text-white/60 text-sm">RAVENKART ile oluşturuldu</p>
         </div>
 
-        {/* Business Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
+        {/* Mobile Business Card Design - Exact copy from dashboard */}
+        <div className="max-w-sm mx-auto">
           <motion.div
+            id="business-card"
             className="rounded-3xl shadow-2xl relative overflow-hidden"
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.3 }}
@@ -232,67 +280,130 @@ END:VCARD`
               color: businessCard.textColor || '#1f2937'
             }}
           >
-            {/* Full-width Profile Photo - Square with Carousel */}
-            <div className="w-full aspect-square relative group">
-              {businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
-                <>
-                  <img 
-                    src={businessCard.profilePhotos[currentPhotoIndex]} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => {
-                      if (businessCard.profilePhotos && businessCard.profilePhotos.length > 1) {
-                        setCurrentPhotoIndex((prev) => 
-                          prev === businessCard.profilePhotos!.length - 1 ? 0 : prev + 1
-                        );
-                      }
-                    }}
-                  />
-                  
-                  {/* Navigation Dots */}
-                  {businessCard.profilePhotos.length > 1 && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {businessCard.profilePhotos.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentPhotoIndex(index);
-                          }}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            index === currentPhotoIndex 
-                              ? 'bg-white scale-125' 
-                              : 'bg-white/60 hover:bg-white/80'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Photo Counter */}
-                  {businessCard.profilePhotos.length > 1 && (
-                    <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      {currentPhotoIndex + 1}/{businessCard.profilePhotos.length}
-                    </div>
-                  )}
-                </>
+            {/* Logo/Profile Photo Container with Animation */}
+            <div 
+              className="w-full aspect-square relative group"
+              onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+              onTouchEnd={(e) => {
+                const touchEndX = e.changedTouches[0].clientX
+                const difference = touchStartX - touchEndX
+                
+                if (Math.abs(difference) > 80) { // 80px minimum swipe distance
+                  setShowLogo(!showLogo)
+                }
+              }}
+            >
+              {/* Background - Logo or Profile based on showLogo state */}
+              {showLogo ? (
+                /* Logo in background when showLogo=true */
+                businessCard.logo_url ? (
+                  <div className="w-full h-full bg-white flex items-center justify-center p-8">
+                    <img 
+                      src={businessCard.logo_url} 
+                      alt="Company Logo" 
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <div className="w-32 h-32 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full"></div>
+                  </div>
+                )
               ) : (
-                <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                  <User className="w-24 h-24 text-white/60" />
-                </div>
+                /* Profile photo in background when showLogo=false */
+                businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
+                  <>
+                    <img 
+                      src={businessCard.profilePhotos[currentPhotoIndex]} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        if (businessCard.profilePhotos && businessCard.profilePhotos.length > 1) {
+                          setCurrentPhotoIndex((prev) => 
+                            prev === businessCard.profilePhotos!.length - 1 ? 0 : prev + 1
+                          );
+                        }
+                      }}
+                    />
+                    
+                    {/* Navigation Dots - only show when profile is in background */}
+                    {businessCard.profilePhotos.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {businessCard.profilePhotos.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentPhotoIndex(index);
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              index === currentPhotoIndex 
+                                ? 'bg-white scale-125' 
+                                : 'bg-white/60 hover:bg-white/80'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Photo Counter - only show when profile is in background */}
+                    {businessCard.profilePhotos.length > 1 && (
+                      <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        {currentPhotoIndex + 1}/{businessCard.profilePhotos.length}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                    <User className="w-24 h-24 text-white/60" />
+                  </div>
+                )
               )}
+              
             </div>
 
             {/* 30px Ribbon with Gradient */}
             <div 
-              className="h-8 border-t border-white/20"
+              className="h-8 border-t border-white/20 relative"
               style={{
                 background: `linear-gradient(135deg, ${businessCard.ribbonPrimaryColor || '#8b5cf6'} 0%, ${businessCard.ribbonSecondaryColor || '#3b82f6'} 100%)`
               }}
-            />
+            >
+              {/* Circle overlay on ribbon - Only show if logo exists */}
+              {businessCard.logo_url && (
+                <div 
+                  className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setShowLogo(!showLogo)}
+                >
+                {!showLogo ? (
+                  /* Show logo in circle when profile is in background */
+                  businessCard.logo_url ? (
+                    <img 
+                      src={businessCard.logo_url} 
+                      alt="Company Logo" 
+                      className="w-32 h-32 object-contain"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
+                  )
+                ) : (
+                  /* Show profile photo in circle when logo is in background */
+                  businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
+                    <img 
+                      src={businessCard.profilePhotos[currentPhotoIndex]} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
+                  )
+                )}
+                </div>
+              )}
+            </div>
 
-            {/* Content Section */}
-            <div className="p-6 space-y-4">
+            {/* Content Section with larger fonts - Adjusted spacing for logo circle */}
+            <div className={`px-6 pb-6 space-y-4 ${businessCard.logo_url ? 'pt-24' : 'pt-8'}`}>
               {/* Name, Title, Company */}
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-bold" style={{ color: businessCard.textColor || '#1f2937' }}>{businessCard.name}</h2>
@@ -301,7 +412,7 @@ END:VCARD`
               </div>
 
               {/* Contact Info */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {businessCard.phone && (
                   <a 
                     href={`tel:${businessCard.phone}`}
@@ -346,11 +457,18 @@ END:VCARD`
                     <span className="text-sm">{businessCard.location}</span>
                   </a>
                 )}
+                {businessCard.iban && (
+                  <div className="flex items-center justify-center gap-2 opacity-80" style={{ color: businessCard.textColor || '#1f2937' }}>
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm font-mono">{businessCard.iban}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Social Media Icons */}
-              <div className="flex justify-center gap-4 py-4">
-                {businessCard.socialMedia?.linkedin && (
+              {/* Social Media Icons - Only show if showInPublic is true */}
+              {businessCard.socialMedia?.showInPublic === true && (
+                <div className="flex justify-center gap-4 py-4">
+                {businessCard.socialMedia?.linkedin && businessCard.socialMedia?.showLinkedin !== false && (
                   <a 
                     href={`https://linkedin.com/in/${businessCard.socialMedia.linkedin}`}
                     target="_blank"
@@ -363,7 +481,7 @@ END:VCARD`
                     <Linkedin className="w-5 h-5 text-white" />
                   </a>
                 )}
-                {businessCard.socialMedia?.twitter && (
+                {businessCard.socialMedia?.twitter && businessCard.socialMedia?.showTwitter !== false && (
                   <a 
                     href={`https://twitter.com/${businessCard.socialMedia.twitter}`}
                     target="_blank"
@@ -376,7 +494,7 @@ END:VCARD`
                     <Twitter className="w-5 h-5 text-white" />
                   </a>
                 )}
-                {businessCard.socialMedia?.instagram && (
+                {businessCard.socialMedia?.instagram && businessCard.socialMedia?.showInstagram !== false && (
                   <a 
                     href={`https://instagram.com/${businessCard.socialMedia.instagram}`}
                     target="_blank"
@@ -389,7 +507,7 @@ END:VCARD`
                     <Instagram className="w-5 h-5 text-white" />
                   </a>
                 )}
-                {businessCard.socialMedia?.youtube && (
+                {businessCard.socialMedia?.youtube && businessCard.socialMedia?.showYoutube !== false && (
                   <a 
                     href={`https://youtube.com/${businessCard.socialMedia.youtube}`}
                     target="_blank"
@@ -402,7 +520,7 @@ END:VCARD`
                     <Youtube className="w-5 h-5 text-white" />
                   </a>
                 )}
-                {businessCard.socialMedia?.facebook && (
+                {businessCard.socialMedia?.facebook && businessCard.socialMedia?.showFacebook !== false && (
                   <a 
                     href={`https://facebook.com/${businessCard.socialMedia.facebook}`}
                     target="_blank"
@@ -415,7 +533,7 @@ END:VCARD`
                     <Facebook className="w-5 h-5 text-white" />
                   </a>
                 )}
-                {businessCard.socialMedia?.whatsapp && (
+                {businessCard.socialMedia?.whatsapp && businessCard.socialMedia?.showWhatsapp !== false && (
                   <a 
                     href={`https://wa.me/${businessCard.socialMedia.whatsapp}`}
                     target="_blank"
@@ -428,7 +546,27 @@ END:VCARD`
                     <MessageCircle className="w-5 h-5 text-white" />
                   </a>
                 )}
+                </div>
+              )}
+
+              {/* QR Code Section - Dashboard Style */}
+              <div className="flex justify-center pt-4">
+                <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                  {qrCodeUrl ? (
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="QR Code" 
+                      className="w-full h-full object-contain p-2"
+                    />
+                  ) : (
+                    <QrCode className="w-16 h-16" style={{ color: businessCard.textColor || '#1f2937' }} />
+                  )}
+                </div>
               </div>
+              
+              <p className="text-center opacity-60 text-xs mt-2" style={{ color: businessCard.textColor || '#1f2937' }}>
+                QR kodu tarayarak kartviziti görüntüleyin
+              </p>
 
               {/* Projects/Products Section */}
               {businessCard.projects && businessCard.projects.length > 0 && (
@@ -449,44 +587,16 @@ END:VCARD`
             {/* Powered by RAVENKART */}
             <div className="bg-black/20 py-2 text-center">
               <a 
-                href="/"
-                target="_blank" 
+                href="/" 
+                target="_blank"
                 className="text-white/60 text-xs hover:text-white/80 transition-colors"
               >
                 Powered by RAVENKART
               </a>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
 
-        {/* QR Code Section */}
-        {qrCodeData && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 text-center"
-          >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <QrCode className="w-5 h-5 text-white" />
-                <h3 className="text-white font-semibold">Bu Kartviziti Paylaş</h3>
-              </div>
-              
-              <div className="bg-white rounded-xl p-4 inline-block">
-                <img 
-                  src={qrCodeData} 
-                  alt="QR Code" 
-                  className="w-48 h-48 mx-auto"
-                />
-              </div>
-              
-              <p className="text-white/70 text-sm mt-3">
-                📱 QR kodu tarayarak bu kartvizite erişebilirsin
-              </p>
-            </div>
-          </motion.div>
-        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 mt-6">

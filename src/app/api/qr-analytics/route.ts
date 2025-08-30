@@ -5,10 +5,10 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    // Supabase client oluştur
+    // Supabase admin client oluştur - RLS bypass için
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
     const body = await request.json()
@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Analytics kayıt hatası:', error)
-      // Analytics hatası QR yönlendirmesini engellemsin, sessizce devam et
+      return NextResponse.json(
+        { error: 'Analytics kayıt hatası: ' + error.message },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ success: true })
@@ -52,10 +55,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Supabase client oluştur
+    // Supabase admin client oluştur - RLS bypass için  
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
     const { searchParams } = new URL(request.url)
