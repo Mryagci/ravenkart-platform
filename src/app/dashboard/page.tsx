@@ -589,9 +589,10 @@ END:VCARD`
                       )}
                     </div>
 
-                    {/* Social Media Icons */}
-                    <div className="flex justify-center gap-4 py-4">
-                      {businessCard.socialMedia?.linkedin && (
+                    {/* Social Media Icons - Only show if showInPublic is true */}
+                    {businessCard.socialMedia?.showInPublic === true && (
+                      <div className="flex justify-center gap-4 py-4">
+                      {businessCard.socialMedia?.linkedin && businessCard.socialMedia?.showLinkedin !== false && (
                         <a 
                           href={`https://linkedin.com/in/${businessCard.socialMedia.linkedin}`}
                           className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -602,7 +603,7 @@ END:VCARD`
                           <Linkedin className="w-5 h-5 text-white" />
                         </a>
                       )}
-                      {businessCard.socialMedia?.twitter && (
+                      {businessCard.socialMedia?.twitter && businessCard.socialMedia?.showTwitter !== false && (
                         <a 
                           href={`https://twitter.com/${businessCard.socialMedia.twitter}`}
                           className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -613,7 +614,7 @@ END:VCARD`
                           <Twitter className="w-5 h-5 text-white" />
                         </a>
                       )}
-                      {businessCard.socialMedia?.instagram && (
+                      {businessCard.socialMedia?.instagram && businessCard.socialMedia?.showInstagram !== false && (
                         <a 
                           href={`https://instagram.com/${businessCard.socialMedia.instagram}`}
                           className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -624,7 +625,7 @@ END:VCARD`
                           <Instagram className="w-5 h-5 text-white" />
                         </a>
                       )}
-                      {businessCard.socialMedia?.youtube && (
+                      {businessCard.socialMedia?.youtube && businessCard.socialMedia?.showYoutube !== false && (
                         <a 
                           href={`https://youtube.com/${businessCard.socialMedia.youtube}`}
                           className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -635,7 +636,7 @@ END:VCARD`
                           <Youtube className="w-5 h-5 text-white" />
                         </a>
                       )}
-                      {businessCard.socialMedia?.facebook && (
+                      {businessCard.socialMedia?.facebook && businessCard.socialMedia?.showFacebook !== false && (
                         <a 
                           href={`https://facebook.com/${businessCard.socialMedia.facebook}`}
                           className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -646,7 +647,7 @@ END:VCARD`
                           <Facebook className="w-5 h-5 text-white" />
                         </a>
                       )}
-                      {businessCard.socialMedia?.whatsapp && (
+                      {businessCard.socialMedia?.whatsapp && businessCard.socialMedia?.showWhatsapp !== false && (
                         <a 
                           href={`https://wa.me/${businessCard.socialMedia.whatsapp}`}
                           className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -657,7 +658,8 @@ END:VCARD`
                           <MessageCircle className="w-5 h-5 text-white" />
                         </a>
                       )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* QR Code Section */}
                     <div className="flex justify-center pt-4">

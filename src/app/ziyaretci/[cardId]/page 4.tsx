@@ -54,13 +54,6 @@ interface BusinessCard {
     youtube?: string
     facebook?: string
     whatsapp?: string
-    showInPublic?: boolean
-    showLinkedin?: boolean
-    showTwitter?: boolean
-    showInstagram?: boolean
-    showYoutube?: boolean
-    showFacebook?: boolean
-    showWhatsapp?: boolean
   }
 }
 
@@ -462,6 +455,17 @@ export default function ZiyaretciKartvizitSayfasi() {
               )
             )}
             
+            
+            {/* Swipe Hint */}
+            {card.logo_url && card.profile_photos && card.profile_photos.length > 0 && (
+              <motion.div 
+                className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                animate={{ opacity: 0.7 }}
+                transition={{ delay: 1, duration: 2 }}
+              >
+                👈 Kaydır
+              </motion.div>
+            )}
           </div>
 
           {/* 30px Ribbon with Gradient */}
@@ -473,7 +477,7 @@ export default function ZiyaretciKartvizitSayfasi() {
           >
             {/* Circle overlay on ribbon - Shows opposite of background */}
             <div 
-              className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+              className="absolute -top-10 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
               onClick={() => setShowLogo(!showLogo)}
             >
               {!showLogo ? (
@@ -563,10 +567,9 @@ export default function ZiyaretciKartvizitSayfasi() {
               )}
             </div>
 
-            {/* Social Media Icons - Only show if showInPublic is explicitly true */}
-            {card.social_media?.showInPublic === true && (
-              <div className="flex justify-center gap-4 py-4">
-                {card.social_media?.linkedin && card.social_media?.showLinkedin !== false && (
+            {/* Social Media Icons */}
+            <div className="flex justify-center gap-4 py-4">
+              {card.social_media?.linkedin && (
                 <a 
                   href={`https://linkedin.com/in/${card.social_media.linkedin}`}
                   target="_blank"
@@ -579,7 +582,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Linkedin className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.twitter && card.social_media?.showTwitter !== false && (
+              {card.social_media?.twitter && (
                 <a 
                   href={`https://twitter.com/${card.social_media.twitter}`}
                   target="_blank"
@@ -592,7 +595,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Twitter className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.instagram && card.social_media?.showInstagram !== false && (
+              {card.social_media?.instagram && (
                 <a 
                   href={`https://instagram.com/${card.social_media.instagram}`}
                   target="_blank"
@@ -605,7 +608,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Instagram className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.youtube && card.social_media?.showYoutube !== false && (
+              {card.social_media?.youtube && (
                 <a 
                   href={`https://youtube.com/${card.social_media.youtube}`}
                   target="_blank"
@@ -618,7 +621,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Youtube className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.facebook && card.social_media?.showFacebook !== false && (
+              {card.social_media?.facebook && (
                 <a 
                   href={`https://facebook.com/${card.social_media.facebook}`}
                   target="_blank"
@@ -631,7 +634,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Facebook className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.whatsapp && card.social_media?.showWhatsapp !== false && (
+              {card.social_media?.whatsapp && (
                 <a 
                   href={`https://wa.me/${card.social_media.whatsapp}`}
                   target="_blank"
@@ -644,8 +647,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <MessageCircle className="w-5 h-5 text-white" />
                 </a>
               )}
-              </div>
-            )}
+            </div>
 
             {/* QR Code Section - Same as Dashboard */}
             <div className="flex justify-center pt-4">
@@ -687,7 +689,6 @@ export default function ZiyaretciKartvizitSayfasi() {
             </a>
           </div>
         </motion.div>
-
 
         {/* Action Buttons - Same as Dashboard */}
         <div className="space-y-4 max-w-sm mx-auto px-4 mt-8">

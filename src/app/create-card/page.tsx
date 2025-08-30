@@ -19,6 +19,17 @@ interface SocialMedia {
   pinterest?: string
   whatsapp?: string
   showInPublic?: boolean
+  // Individual platform visibility controls
+  showLinkedin?: boolean
+  showTwitter?: boolean
+  showInstagram?: boolean
+  showTiktok?: boolean
+  showYoutube?: boolean
+  showFacebook?: boolean
+  showSnapchat?: boolean
+  showTelegram?: boolean
+  showPinterest?: boolean
+  showWhatsapp?: boolean
 }
 
 interface Project {
@@ -50,6 +61,13 @@ interface BusinessCardData {
   projects?: Project[]
   qrCodeType?: 'full' | 'limited'
   qrRedirectUrl?: string
+}
+
+// Helper function to check if user has any social media accounts
+const hasAnySocialMedia = (socialMedia: any) => {
+  if (!socialMedia) return false;
+  const platforms = ['linkedin', 'twitter', 'instagram', 'youtube', 'facebook', 'whatsapp'];
+  return platforms.some(platform => socialMedia[platform] && socialMedia[platform].trim() !== '');
 }
 
 export default function CreateCard() {
@@ -186,7 +204,12 @@ export default function CreateCard() {
           ribbonPrimaryColor: card.ribbon_primary_color || '#8b5cf6',
           ribbonSecondaryColor: card.ribbon_secondary_color || '#3b82f6',
           textColor: card.text_color || '#1f2937',
-          socialMedia: card.social_media || {},
+          socialMedia: {
+            ...card.social_media || {},
+            showInPublic: card.social_media?.showInPublic !== undefined 
+              ? card.social_media.showInPublic 
+              : true
+          },
           projects: card.projects || []
         });
 
@@ -391,7 +414,7 @@ export default function CreateCard() {
     }
   }
 
-  const handleSocialMediaChange = (platform: keyof SocialMedia, value: string) => {
+  const handleSocialMediaChange = (platform: keyof SocialMedia, value: string | boolean) => {
     setCardData(prev => ({
       ...prev,
       socialMedia: {
@@ -546,8 +569,6 @@ export default function CreateCard() {
 
       // Prepare card data for database
       const cardDataForDB = {
-        user_id: user.id,
-        username: username,
         name: cardData.name.trim(),
         title: cardData.title?.trim() || null,
         company: cardData.company?.trim() || null,
@@ -562,10 +583,16 @@ export default function CreateCard() {
         ribbon_secondary_color: cardData.ribbonSecondaryColor || '#3b82f6',
         text_color: cardData.textColor || '#1f2937',
         social_media: cardData.socialMedia || {},
-        projects: cardData.projects || [],
-        qr_code_type: 'visitor', // Sabit olarak visitor sayfası
-        is_active: true
+        projects: cardData.projects || []
       };
+
+      // Add fields that are only needed for new cards
+      if (!isUpdate) {
+        cardDataForDB.user_id = user.id;
+        cardDataForDB.username = username;
+        cardDataForDB.qr_code_type = 'visitor';
+        cardDataForDB.is_active = true;
+      }
 
       // Update or Insert card based on whether it exists
       let savedCard = null;
@@ -577,14 +604,17 @@ export default function CreateCard() {
           .update(cardDataForDB)
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .select('id')
-          .single();
+          .select('id');
 
         if (updateError) {
           throw new Error(`Kartvizit güncellenirken hata oluştu: ${updateError.message}`);
         }
 
-        savedCard = data;
+        if (!data || data.length === 0) {
+          throw new Error('Güncellenecek kartvizit bulunamadı');
+        }
+
+        savedCard = data[0];
         console.log('✅ Kartvizit güncellendi:', savedCard.id);
       } else {
         // Insert new card with retry for unique constraint
@@ -1149,75 +1179,171 @@ export default function CreateCard() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* LinkedIn */}
-                      <div className="flex items-center gap-2">
-                        <Linkedin className="w-5 h-5 text-blue-400" />
-                        <input
-                          type="text"
-                          placeholder="kullaniciadi"
-                          value={cardData.socialMedia?.linkedin || ''}
-                          onChange={(e) => handleSocialMediaChange('linkedin', e.target.value)}
-                          className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Linkedin className="w-5 h-5 text-blue-400" />
+                          <input
+                            type="text"
+                            placeholder="kullaniciadi"
+                            value={cardData.socialMedia?.linkedin || ''}
+                            onChange={(e) => handleSocialMediaChange('linkedin', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
+                          />
+                        </div>
+                        {cardData.socialMedia?.linkedin && (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="checkbox"
+                              id="show-linkedin"
+                              checked={cardData.socialMedia?.showLinkedin ?? true}
+                              onChange={(e) => handleSocialMediaChange('showLinkedin', e.target.checked)}
+                              className="w-3 h-3 rounded"
+                            />
+                            <label htmlFor="show-linkedin" className="text-white/70 text-xs">
+                              LinkedIn'i göster
+                            </label>
+                          </div>
+                        )}
                       </div>
 
                       {/* Twitter */}
-                      <div className="flex items-center gap-2">
-                        <Twitter className="w-5 h-5 text-sky-400" />
-                        <input
-                          type="text"
-                          placeholder="@kullaniciadi"
-                          value={cardData.socialMedia?.twitter || ''}
-                          onChange={(e) => handleSocialMediaChange('twitter', e.target.value)}
-                          className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Twitter className="w-5 h-5 text-sky-400" />
+                          <input
+                            type="text"
+                            placeholder="@kullaniciadi"
+                            value={cardData.socialMedia?.twitter || ''}
+                            onChange={(e) => handleSocialMediaChange('twitter', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
+                          />
+                        </div>
+                        {cardData.socialMedia?.twitter && (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="checkbox"
+                              id="show-twitter"
+                              checked={cardData.socialMedia?.showTwitter ?? true}
+                              onChange={(e) => handleSocialMediaChange('showTwitter', e.target.checked)}
+                              className="w-3 h-3 rounded"
+                            />
+                            <label htmlFor="show-twitter" className="text-white/70 text-xs">
+                              Twitter'ı göster
+                            </label>
+                          </div>
+                        )}
                       </div>
 
                       {/* Instagram */}
-                      <div className="flex items-center gap-2">
-                        <Instagram className="w-5 h-5 text-pink-400" />
-                        <input
-                          type="text"
-                          placeholder="kullaniciadi"
-                          value={cardData.socialMedia?.instagram || ''}
-                          onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
-                          className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Instagram className="w-5 h-5 text-pink-400" />
+                          <input
+                            type="text"
+                            placeholder="kullaniciadi"
+                            value={cardData.socialMedia?.instagram || ''}
+                            onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
+                          />
+                        </div>
+                        {cardData.socialMedia?.instagram && (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="checkbox"
+                              id="show-instagram"
+                              checked={cardData.socialMedia?.showInstagram ?? true}
+                              onChange={(e) => handleSocialMediaChange('showInstagram', e.target.checked)}
+                              className="w-3 h-3 rounded"
+                            />
+                            <label htmlFor="show-instagram" className="text-white/70 text-xs">
+                              Instagram'ı göster
+                            </label>
+                          </div>
+                        )}
                       </div>
 
                       {/* YouTube */}
-                      <div className="flex items-center gap-2">
-                        <Youtube className="w-5 h-5 text-red-500" />
-                        <input
-                          type="text"
-                          placeholder="@kanal"
-                          value={cardData.socialMedia?.youtube || ''}
-                          onChange={(e) => handleSocialMediaChange('youtube', e.target.value)}
-                          className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Youtube className="w-5 h-5 text-red-500" />
+                          <input
+                            type="text"
+                            placeholder="@kanal"
+                            value={cardData.socialMedia?.youtube || ''}
+                            onChange={(e) => handleSocialMediaChange('youtube', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
+                          />
+                        </div>
+                        {cardData.socialMedia?.youtube && (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="checkbox"
+                              id="show-youtube"
+                              checked={cardData.socialMedia?.showYoutube ?? true}
+                              onChange={(e) => handleSocialMediaChange('showYoutube', e.target.checked)}
+                              className="w-3 h-3 rounded"
+                            />
+                            <label htmlFor="show-youtube" className="text-white/70 text-xs">
+                              YouTube'u göster
+                            </label>
+                          </div>
+                        )}
                       </div>
 
                       {/* Facebook */}
-                      <div className="flex items-center gap-2">
-                        <Facebook className="w-5 h-5 text-blue-500" />
-                        <input
-                          type="text"
-                          placeholder="kullaniciadi"
-                          value={cardData.socialMedia?.facebook || ''}
-                          onChange={(e) => handleSocialMediaChange('facebook', e.target.value)}
-                          className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Facebook className="w-5 h-5 text-blue-500" />
+                          <input
+                            type="text"
+                            placeholder="kullaniciadi"
+                            value={cardData.socialMedia?.facebook || ''}
+                            onChange={(e) => handleSocialMediaChange('facebook', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
+                          />
+                        </div>
+                        {cardData.socialMedia?.facebook && (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="checkbox"
+                              id="show-facebook"
+                              checked={cardData.socialMedia?.showFacebook ?? true}
+                              onChange={(e) => handleSocialMediaChange('showFacebook', e.target.checked)}
+                              className="w-3 h-3 rounded"
+                            />
+                            <label htmlFor="show-facebook" className="text-white/70 text-xs">
+                              Facebook'u göster
+                            </label>
+                          </div>
+                        )}
                       </div>
 
                       {/* WhatsApp */}
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="w-5 h-5 text-green-500" />
-                        <input
-                          type="text"
-                          placeholder="+90 555 123 45 67"
-                          value={cardData.socialMedia?.whatsapp || ''}
-                          onChange={(e) => handleSocialMediaChange('whatsapp', e.target.value)}
-                          className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="w-5 h-5 text-green-500" />
+                          <input
+                            type="text"
+                            placeholder="+90 555 123 45 67"
+                            value={cardData.socialMedia?.whatsapp || ''}
+                            onChange={(e) => handleSocialMediaChange('whatsapp', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/60"
+                          />
+                        </div>
+                        {cardData.socialMedia?.whatsapp && (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="checkbox"
+                              id="show-whatsapp"
+                              checked={cardData.socialMedia?.showWhatsapp ?? true}
+                              onChange={(e) => handleSocialMediaChange('showWhatsapp', e.target.checked)}
+                              className="w-3 h-3 rounded"
+                            />
+                            <label htmlFor="show-whatsapp" className="text-white/70 text-xs">
+                              WhatsApp'ı göster
+                            </label>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1227,7 +1353,7 @@ export default function CreateCard() {
                         type="checkbox"
                         id="social-public"
                         checked={cardData.socialMedia?.showInPublic ?? true}
-                        onChange={(e) => handleSocialMediaChange('showInPublic', e.target.checked.toString())}
+                        onChange={(e) => handleSocialMediaChange('showInPublic', e.target.checked)}
                         className="w-4 h-4 rounded"
                       />
                       <label htmlFor="social-public" className="text-white/80 text-sm">
@@ -1529,9 +1655,10 @@ export default function CreateCard() {
                             )}
                           </div>
 
-                          {/* Social Media Icons */}
-                          <div className="flex justify-center gap-3 py-4 flex-wrap">
-                            {cardData.socialMedia?.linkedin && (
+                          {/* Social Media Icons - Only show if showInPublic is true */}
+                          {cardData.socialMedia?.showInPublic === true && (
+                            <div className="flex justify-center gap-3 py-4 flex-wrap">
+                            {cardData.socialMedia?.linkedin && cardData.socialMedia?.showLinkedin !== false && (
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center"
                                 style={{
@@ -1541,7 +1668,7 @@ export default function CreateCard() {
                                 <Linkedin className="w-5 h-5 text-white" />
                               </div>
                             )}
-                            {cardData.socialMedia?.twitter && (
+                            {cardData.socialMedia?.twitter && cardData.socialMedia?.showTwitter !== false && (
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center"
                                 style={{
@@ -1551,7 +1678,7 @@ export default function CreateCard() {
                                 <Twitter className="w-5 h-5 text-white" />
                               </div>
                             )}
-                            {cardData.socialMedia?.instagram && (
+                            {cardData.socialMedia?.instagram && cardData.socialMedia?.showInstagram !== false && (
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center"
                                 style={{
@@ -1561,7 +1688,7 @@ export default function CreateCard() {
                                 <Instagram className="w-5 h-5 text-white" />
                               </div>
                             )}
-                            {cardData.socialMedia?.youtube && (
+                            {cardData.socialMedia?.youtube && cardData.socialMedia?.showYoutube !== false && (
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center"
                                 style={{
@@ -1571,7 +1698,7 @@ export default function CreateCard() {
                                 <Youtube className="w-5 h-5 text-white" />
                               </div>
                             )}
-                            {cardData.socialMedia?.facebook && (
+                            {cardData.socialMedia?.facebook && cardData.socialMedia?.showFacebook !== false && (
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center"
                                 style={{
@@ -1581,7 +1708,7 @@ export default function CreateCard() {
                                 <Facebook className="w-5 h-5 text-white" />
                               </div>
                             )}
-                            {cardData.socialMedia?.whatsapp && (
+                            {cardData.socialMedia?.whatsapp && cardData.socialMedia?.showWhatsapp !== false && (
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center"
                                 style={{
@@ -1591,7 +1718,8 @@ export default function CreateCard() {
                                 <MessageCircle className="w-5 h-5 text-white" />
                               </div>
                             )}
-                          </div>
+                            </div>
+                          )}
 
                           {/* QR Code Section */}
                           <div className="flex justify-center pt-4">

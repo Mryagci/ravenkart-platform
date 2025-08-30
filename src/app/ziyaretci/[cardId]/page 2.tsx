@@ -46,7 +46,6 @@ interface BusinessCard {
   ribbon_secondary_color?: string
   text_color?: string
   profile_photos?: string[]
-  logo_url?: string
   social_media?: {
     linkedin?: string
     twitter?: string
@@ -54,13 +53,6 @@ interface BusinessCard {
     youtube?: string
     facebook?: string
     whatsapp?: string
-    showInPublic?: boolean
-    showLinkedin?: boolean
-    showTwitter?: boolean
-    showInstagram?: boolean
-    showYoutube?: boolean
-    showFacebook?: boolean
-    showWhatsapp?: boolean
   }
 }
 
@@ -71,8 +63,6 @@ export default function ZiyaretciKartvizitSayfasi() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
-  const [showLogo, setShowLogo] = useState(false) // false = profil fotoğraf arka planda, logo yuvarlakta
-  const [touchStartX, setTouchStartX] = useState(0)
 
   useEffect(() => {
     if (cardId) {
@@ -156,185 +146,33 @@ export default function ZiyaretciKartvizitSayfasi() {
   const saveScreenshot = async () => {
     if (!card) return
     
-    // Mobil haptic feedback (titreşim)
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50) // 50ms titreşim
-    }
-    
     try {
       const html2canvas = (await import('html2canvas')).default
       const element = document.querySelector('#business-card')
       
       if (element) {
-        // Yüksek kaliteli screenshot al
         const canvas = await html2canvas(element as HTMLElement, {
           backgroundColor: '#ffffff',
-          scale: 3, // Daha yüksek kalite
+          scale: 2,
           logging: false,
-          useCORS: true,
-          allowTaint: true,
-          foreignObjectRendering: true,
-          width: element.scrollWidth,
-          height: element.scrollHeight
         })
         
-        // Mobil cihaz kontrolü
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-        const isAndroid = /Android/.test(navigator.userAgent)
-        
-        if (isMobile) {
-          // Mobil cihazlarda galeriye kaydet
-          await saveToMobileGallery(canvas, card.name)
-        } else {
-          // Desktop'ta normal download
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `${card.name.replace(/\s+/g, '-').toLowerCase()}-kartvizit.png`
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              URL.revokeObjectURL(url)
-            }
-          }, 'image/png', 1.0)
-        }
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `${card.name.replace(/\s+/g, '-').toLowerCase()}-kartvizit.png`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }
+        })
       }
     } catch (error) {
       console.error('Screenshot alınamadı:', error)
       alert('Görüntü kaydedilemedi')
-    }
-  }
-  
-  const saveToMobileGallery = async (canvas: HTMLCanvasElement, cardName: string) => {
-    try {
-      // Canvas'ı blob'a çevir
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob)
-        }, 'image/png', 1.0)
-      })
-      
-      if (!blob) {
-        throw new Error('Canvas blob oluşturulamadı')
-      }
-      
-      const fileName = `${cardName.replace(/\s+/g, '-').toLowerCase()}-kartvizit.png`
-      
-      // Modern Web Share API ile paylaş (iOS Safari ve Chrome)
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], fileName, { type: 'image/png' })
-        
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: `${cardName} - Kartvizit`,
-            text: 'Kartvizit resmi',
-            files: [file]
-          })
-          return
-        }
-      }
-      
-      // File System Access API (Chrome Android)
-      if ('showSaveFilePicker' in window) {
-        try {
-          const fileHandle = await (window as any).showSaveFilePicker({
-            suggestedName: fileName,
-            types: [{
-              description: 'PNG resmi',
-              accept: { 'image/png': ['.png'] }
-            }]
-          })
-          const writable = await fileHandle.createWritable()
-          await writable.write(blob)
-          await writable.close()
-          alert('Kartvizit galeriye kaydedildi!')
-          return
-        } catch (err) {
-          console.log('File System API failed:', err)
-        }
-      }
-      
-      // iOS Safari için özel çözüm
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      if (isIOS) {
-        // iOS'ta yeni bir tab aç ve görüntüyü göster
-        const dataUrl = canvas.toDataURL('image/png', 1.0)
-        const newWindow = window.open()
-        if (newWindow) {
-          newWindow.document.write(`
-            <html>
-              <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>${cardName} - Kartvizit</title>
-                <style>
-                  body {
-                    margin: 0;
-                    padding: 20px;
-                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                    background: #f0f0f0;
-                    text-align: center;
-                  }
-                  img {
-                    max-width: 100%;
-                    height: auto;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                    background: white;
-                  }
-                  .instructions {
-                    margin-top: 20px;
-                    padding: 15px;
-                    background: white;
-                    border-radius: 10px;
-                    text-align: left;
-                  }
-                </style>
-              </head>
-              <body>
-                <h2>📱 ${cardName} - Kartvizit</h2>
-                <img src="${dataUrl}" alt="Kartvizit" />
-                <div class="instructions">
-                  <h3>📥 Galeriye Kaydetmek İçin:</h3>
-                  <p><strong>1.</strong> Resme uzun basın</p>
-                  <p><strong>2.</strong> "Fotoğrafları Kaydet" seçin</p>
-                  <p><strong>3.</strong> İzin istenirse "İzin Ver" deyin</p>
-                </div>
-              </body>
-            </html>
-          `)
-          newWindow.document.close()
-        }
-        return
-      }
-      
-      // Android ve diğer mobil cihazlar için fallback
-      const dataUrl = canvas.toDataURL('image/png', 1.0)
-      const link = document.createElement('a')
-      link.download = fileName
-      link.href = dataUrl
-      
-      // Android'de download attribute desteklenmiyorsa
-      if (typeof link.download === 'undefined') {
-        // Yeni tab'da aç, kullanıcı manuel kaydetsin
-        window.open(dataUrl, '_blank')
-        alert('Açılan sekmede resme uzun basıp "Resmi Kaydet" seçin')
-      } else {
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        alert('Kartvizit indirildi!')
-      }
-      
-    } catch (error) {
-      console.error('Mobil galeriye kaydetme hatası:', error)
-      
-      // Son çare - data URL ile yeni sekme
-      const dataUrl = canvas.toDataURL('image/png', 1.0)
-      window.open(dataUrl, '_blank')
-      alert('Açılan sekmede resme uzun basıp galeriye kaydedin')
     }
   }
 
@@ -382,128 +220,67 @@ export default function ZiyaretciKartvizitSayfasi() {
             color: card.text_color || '#1f2937'
           }}
         >
-          {/* Logo/Profile Photo Container with Animation */}
-          <div 
-            className="w-full aspect-square relative group"
-            onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
-            onTouchEnd={(e) => {
-              const touchEndX = e.changedTouches[0].clientX
-              const difference = touchStartX - touchEndX
-              
-              if (Math.abs(difference) > 80) { // 80px minimum swipe distance
-                setShowLogo(!showLogo)
-              }
-            }}
-          >
-            {/* Background - Logo or Profile based on showLogo state */}
-            {showLogo ? (
-              /* Logo in background when showLogo=true */
-              card.logo_url ? (
-                <div className="w-full h-full bg-white flex items-center justify-center p-8">
-                  <img 
-                    src={card.logo_url} 
-                    alt="Company Logo" 
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  <div className="w-32 h-32 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full"></div>
-                </div>
-              )
+          {/* Full-width Profile Photo - Square with Carousel */}
+          <div className="w-full aspect-square relative group">
+            {card.profile_photos && card.profile_photos.length > 0 ? (
+              <>
+                <img 
+                  src={card.profile_photos[currentPhotoIndex]} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={() => {
+                    if (card.profile_photos && card.profile_photos.length > 1) {
+                      setCurrentPhotoIndex((prev) => 
+                        prev === card.profile_photos!.length - 1 ? 0 : prev + 1
+                      );
+                    }
+                  }}
+                />
+                
+                {/* Navigation Dots */}
+                {card.profile_photos.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {card.profile_photos.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentPhotoIndex(index);
+                        }}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentPhotoIndex 
+                            ? 'bg-white scale-125' 
+                            : 'bg-white/60 hover:bg-white/80'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                {/* Photo Counter */}
+                {card.profile_photos.length > 1 && (
+                  <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    {currentPhotoIndex + 1}/{card.profile_photos.length}
+                  </div>
+                )}
+              </>
             ) : (
-              /* Profile photo in background when showLogo=false */
-              card.profile_photos && card.profile_photos.length > 0 ? (
-                <>
-                  <img 
-                    src={card.profile_photos[currentPhotoIndex]} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => {
-                      if (card.profile_photos && card.profile_photos.length > 1) {
-                        setCurrentPhotoIndex((prev) => 
-                          prev === card.profile_photos!.length - 1 ? 0 : prev + 1
-                        );
-                      }
-                    }}
-                  />
-                  
-                  {/* Navigation Dots - only show when profile is in background */}
-                  {card.profile_photos.length > 1 && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {card.profile_photos.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentPhotoIndex(index);
-                          }}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            index === currentPhotoIndex 
-                              ? 'bg-white scale-125' 
-                              : 'bg-white/60 hover:bg-white/80'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Photo Counter - only show when profile is in background */}
-                  {card.profile_photos.length > 1 && (
-                    <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      {currentPhotoIndex + 1}/{card.profile_photos.length}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                  <User className="w-24 h-24 text-white/60" />
-                </div>
-              )
+              <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                <User className="w-24 h-24 text-white/60" />
+              </div>
             )}
-            
           </div>
 
           {/* 30px Ribbon with Gradient */}
           <div 
-            className="h-8 border-t border-white/20 relative"
+            className="h-8 border-t border-white/20"
             style={{
               background: `linear-gradient(90deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
             }}
-          >
-            {/* Circle overlay on ribbon - Shows opposite of background */}
-            <div 
-              className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => setShowLogo(!showLogo)}
-            >
-              {!showLogo ? (
-                /* Show logo in circle when profile is in background */
-                card.logo_url ? (
-                  <img 
-                    src={card.logo_url} 
-                    alt="Company Logo" 
-                    className="w-32 h-32 object-contain"
-                  />
-                ) : (
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
-                )
-              ) : (
-                /* Show profile photo in circle when logo is in background */
-                card.profile_photos && card.profile_photos.length > 0 ? (
-                  <img 
-                    src={card.profile_photos[currentPhotoIndex]} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
-                )
-              )}
-            </div>
-          </div>
+          ></div>
 
-          {/* Card Info Section - Adjusted spacing for larger logo circle */}
-          <div className="pt-24 px-6 pb-6">
+          {/* Card Info Section */}
+          <div className="p-6">
             {/* Name and Title */}
             <div className="text-center mb-4">
               <h2 className="text-2xl font-bold mb-1" style={{ color: card.text_color || '#1f2937' }}>
@@ -563,10 +340,9 @@ export default function ZiyaretciKartvizitSayfasi() {
               )}
             </div>
 
-            {/* Social Media Icons - Only show if showInPublic is explicitly true */}
-            {card.social_media?.showInPublic === true && (
-              <div className="flex justify-center gap-4 py-4">
-                {card.social_media?.linkedin && card.social_media?.showLinkedin !== false && (
+            {/* Social Media Icons */}
+            <div className="flex justify-center gap-4 py-4">
+              {card.social_media?.linkedin && (
                 <a 
                   href={`https://linkedin.com/in/${card.social_media.linkedin}`}
                   target="_blank"
@@ -579,7 +355,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Linkedin className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.twitter && card.social_media?.showTwitter !== false && (
+              {card.social_media?.twitter && (
                 <a 
                   href={`https://twitter.com/${card.social_media.twitter}`}
                   target="_blank"
@@ -592,7 +368,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Twitter className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.instagram && card.social_media?.showInstagram !== false && (
+              {card.social_media?.instagram && (
                 <a 
                   href={`https://instagram.com/${card.social_media.instagram}`}
                   target="_blank"
@@ -605,7 +381,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Instagram className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.youtube && card.social_media?.showYoutube !== false && (
+              {card.social_media?.youtube && (
                 <a 
                   href={`https://youtube.com/${card.social_media.youtube}`}
                   target="_blank"
@@ -618,7 +394,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Youtube className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.facebook && card.social_media?.showFacebook !== false && (
+              {card.social_media?.facebook && (
                 <a 
                   href={`https://facebook.com/${card.social_media.facebook}`}
                   target="_blank"
@@ -631,7 +407,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <Facebook className="w-5 h-5 text-white" />
                 </a>
               )}
-              {card.social_media?.whatsapp && card.social_media?.showWhatsapp !== false && (
+              {card.social_media?.whatsapp && (
                 <a 
                   href={`https://wa.me/${card.social_media.whatsapp}`}
                   target="_blank"
@@ -644,8 +420,7 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <MessageCircle className="w-5 h-5 text-white" />
                 </a>
               )}
-              </div>
-            )}
+            </div>
 
             {/* QR Code Section - Same as Dashboard */}
             <div className="flex justify-center pt-4">
@@ -688,7 +463,6 @@ export default function ZiyaretciKartvizitSayfasi() {
           </div>
         </motion.div>
 
-
         {/* Action Buttons - Same as Dashboard */}
         <div className="space-y-4 max-w-sm mx-auto px-4 mt-8">
           {/* Kişilere Ekle Button */}
@@ -716,12 +490,7 @@ export default function ZiyaretciKartvizitSayfasi() {
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
             <Download className="w-5 h-5 relative z-10" />
-            <span className="relative z-10">
-              {/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
-                ? 'Galeriye Kaydet' 
-                : 'Görüntü Kaydet'
-              }
-            </span>
+            <span className="relative z-10">Görüntü Kaydet</span>
           </motion.button>
 
           {/* Ana Sayfaya Dön */}
