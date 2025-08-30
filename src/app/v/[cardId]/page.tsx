@@ -125,13 +125,17 @@ export default function VisitorCardPage() {
     try {
       // Capture screenshot using html2canvas
       const html2canvas = (await import('html2canvas')).default
-      const element = document.querySelector('.card-container')
+      const element = document.querySelector('#business-card')
       
       if (element) {
         const canvas = await html2canvas(element as HTMLElement, {
-          backgroundColor: '#f8fafc',
-          scale: 2,
+          backgroundColor: '#ffffff',
+          scale: 3,
           logging: false,
+          useCORS: true,
+          allowTaint: true,
+          width: element.scrollWidth,
+          height: element.scrollHeight
         })
         
         // Mobil cihaz kontrolü
@@ -259,7 +263,7 @@ export default function VisitorCardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 py-8">
       <div className="max-w-md mx-auto px-4">
-        <Card className="shadow-xl card-container">
+        <Card id="business-card" className="shadow-xl card-container">
           <CardContent className="p-6">
             {/* Header */}
             <div className="text-center mb-6">
