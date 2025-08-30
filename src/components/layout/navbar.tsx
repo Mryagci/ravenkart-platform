@@ -158,7 +158,7 @@ const Navbar = () => {
                 </DropdownMenuItem>
 
                 <DropdownMenuItem 
-                  onClick={() => router.push('/apps/card-collection')}
+                  onClick={() => router.push('/apps/saved-cards')}
                   className="flex items-center gap-3 p-3 hover:bg-white/10 focus:bg-white/10"
                 >
                   <Folder className="w-4 h-4 text-purple-400" />
@@ -376,7 +376,7 @@ const Navbar = () => {
                   
                   <button
                     onClick={() => {
-                      router.push('/apps/card-collection');
+                      router.push('/apps/saved-cards');
                       setIsMenuOpen(false);
                     }}
                     className="flex items-center gap-2 text-left text-white/80 hover:text-white transition-colors duration-300 py-1.5"
