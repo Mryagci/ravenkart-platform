@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Phone, Mail, Globe, MapPin, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, Download, Share2 } from 'lucide-react'
+import { Phone, Mail, Globe, MapPin, User, Linkedin, Twitter, Instagram, Youtube, Facebook, MessageCircle, Download, Share2, QrCode } from 'lucide-react'
 
 interface BusinessCard {
   id: string
@@ -32,26 +32,87 @@ export default function PublicProfilePage() {
   const [businessCard, setBusinessCard] = useState<BusinessCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null)
 
   useEffect(() => {
     loadBusinessCard()
   }, [userId])
 
-  const loadBusinessCard = () => {
+  const loadBusinessCard = async () => {
     try {
-      // In a real app, you'd fetch from database by user ID
-      // For now, check localStorage for cards that match the user ID
-      const savedCard = localStorage.getItem('business_card')
-      if (savedCard) {
-        const cardData = JSON.parse(savedCard)
-        if (cardData.user_id === userId) {
-          setBusinessCard(cardData)
-        }
+      const { createClient } = await import("@supabase/supabase-js")
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      // Fetch business card by username
+      const { data, error } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('username', userId)
+        .eq('is_active', true)
+        .single()
+
+      if (error || !data) {
+        console.error('Card not found:', error)
+        setBusinessCard(null)
+      } else {
+        setBusinessCard(data)
+        // Track visit after we have the card data
+        trackVisit(data.id)
+        // Generate QR code for this card
+        generateQRCode(data.username)
       }
     } catch (error) {
       console.error('Error loading business card:', error)
+      setBusinessCard(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const trackVisit = async (cardId: string) => {
+    try {
+      // Track the visit to analytics
+      await fetch('/api/qr-analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cardId: cardId,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+          referrer: document.referrer || null
+        })
+      })
+    } catch (error) {
+      console.error('Analytics tracking failed:', error)
+      // Fail silently, don't affect user experience
+    }
+  }
+
+  const generateQRCode = async (username: string) => {
+    try {
+      const QRCode = (await import('qrcode')).default
+      const currentUrl = window.location.href
+      
+      const qrCodeDataUrl = await QRCode.toDataURL(currentUrl, {
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        quality: 0.92,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        width: 200
+      })
+      
+      setQrCodeData(qrCodeDataUrl)
+    } catch (error) {
+      console.error('QR code generation failed:', error)
     }
   }
 
@@ -397,6 +458,35 @@ END:VCARD`
             </div>
           </motion.div>
         </motion.div>
+
+        {/* QR Code Section */}
+        {qrCodeData && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 text-center"
+          >
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <QrCode className="w-5 h-5 text-white" />
+                <h3 className="text-white font-semibold">Bu Kartviziti Paylaş</h3>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 inline-block">
+                <img 
+                  src={qrCodeData} 
+                  alt="QR Code" 
+                  className="w-48 h-48 mx-auto"
+                />
+              </div>
+              
+              <p className="text-white/70 text-sm mt-3">
+                📱 QR kodu tarayarak bu kartvizite erişebilirsin
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 mt-6">
