@@ -100,6 +100,7 @@ export default function CreateCard() {
     qrCodeType: 'full'
   })
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+  const [showLogo, setShowLogo] = useState(false) // false = profil fotoğraf arka planda, logo yuvarlakta
 
   useEffect(() => {
     checkUser()
@@ -1553,22 +1554,32 @@ export default function CreateCard() {
                           color: cardData.textColor || '#1f2937'
                         }}
                       >
-                        {/* Full-width Profile Photo - Square with Carousel */}
+                        {/* Background Image - Profile Photo or Logo based on showLogo state */}
                         <div className="w-full aspect-square relative group">
-                          {cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
-                            <>
-                              <img 
-                                src={cardData.profilePhotos[currentPhotoIndex]} 
-                                alt="Profile" 
-                                className="w-full h-full object-cover cursor-pointer"
-                                onClick={() => {
-                                  if (cardData.profilePhotos && cardData.profilePhotos.length > 1) {
-                                    setCurrentPhotoIndex((prev) => 
-                                      prev === cardData.profilePhotos!.length - 1 ? 0 : prev + 1
-                                    );
-                                  }
-                                }}
-                              />
+                          {showLogo && cardData.companyLogo ? (
+                            /* Show logo in background when logo mode is active */
+                            <img 
+                              src={cardData.companyLogo} 
+                              alt="Company Logo" 
+                              className="w-full h-full object-contain bg-gradient-to-br from-white via-gray-50 to-gray-100 cursor-pointer"
+                              onClick={() => setShowLogo(!showLogo)}
+                            />
+                          ) : (
+                            /* Show profile photo in background (default) */
+                            cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
+                              <>
+                                <img 
+                                  src={cardData.profilePhotos[currentPhotoIndex]} 
+                                  alt="Profile" 
+                                  className="w-full h-full object-cover cursor-pointer"
+                                  onClick={() => {
+                                    if (cardData.profilePhotos && cardData.profilePhotos.length > 1) {
+                                      setCurrentPhotoIndex((prev) => 
+                                        prev === cardData.profilePhotos!.length - 1 ? 0 : prev + 1
+                                      );
+                                    }
+                                  }}
+                                />
                               
                               {/* Navigation Dots */}
                               {cardData.profilePhotos.length > 1 && (
@@ -1596,24 +1607,57 @@ export default function CreateCard() {
                                   {currentPhotoIndex + 1}/{cardData.profilePhotos.length}
                                 </div>
                               )}
-                            </>
-                          ) : (
-                            <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                              <User className="w-24 h-24 text-white/60" />
+                              </>
+                            ) : (
+                              <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                                <User className="w-24 h-24 text-white/60" />
+                              </div>
+                            )
+                          )}
+                        </div>
+
+                        {/* 30px Ribbon with Gradient and Logo Circle */}
+                        <div 
+                          className="h-8 border-t border-white/20 relative"
+                          style={{
+                            background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                          }}
+                        >
+                          {/* Circle overlay on ribbon - Only show if logo exists */}
+                          {cardData.companyLogo && (
+                            <div 
+                              className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                              onClick={() => setShowLogo(!showLogo)}
+                            >
+                              {!showLogo ? (
+                                /* Show logo in circle when profile is in background */
+                                cardData.companyLogo ? (
+                                  <img 
+                                    src={cardData.companyLogo} 
+                                    alt="Company Logo" 
+                                    className="w-32 h-32 object-contain"
+                                  />
+                                ) : (
+                                  <Building className="w-20 h-20 text-gray-400" />
+                                )
+                              ) : (
+                                /* Show profile in circle when logo is in background */
+                                cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
+                                  <img 
+                                    src={cardData.profilePhotos[currentPhotoIndex]} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
+                                )
+                              )}
                             </div>
                           )}
                         </div>
 
-                        {/* 30px Ribbon with Gradient */}
-                        <div 
-                          className="h-8 border-t border-white/20"
-                          style={{
-                            background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                          }}
-                        />
-
-                        {/* Content Section with larger fonts */}
-                        <div className="p-6 space-y-4">
+                        {/* Content Section with larger fonts - Adjusted spacing for logo circle */}
+                        <div className={`px-6 pb-6 space-y-4 ${cardData.companyLogo ? 'pt-24' : 'pt-6'}`}>
                           {/* Name, Title, Company */}
                           <div className="text-center space-y-2">
                             <h2 className="text-2xl font-bold" style={{ color: cardData.textColor || '#1f2937' }}>{cardData.name || 'Ad Soyad'}</h2>

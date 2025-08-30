@@ -471,11 +471,12 @@ export default function ZiyaretciKartvizitSayfasi() {
               background: `linear-gradient(90deg, ${card.ribbon_primary_color || '#8b5cf6'} 0%, ${card.ribbon_secondary_color || '#3b82f6'} 100%)`
             }}
           >
-            {/* Circle overlay on ribbon - Shows opposite of background */}
-            <div 
-              className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => setShowLogo(!showLogo)}
-            >
+            {/* Circle overlay on ribbon - Only show if logo exists */}
+            {card.logo_url && (
+              <div 
+                className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                onClick={() => setShowLogo(!showLogo)}
+              >
               {!showLogo ? (
                 /* Show logo in circle when profile is in background */
                 card.logo_url ? (
@@ -499,11 +500,12 @@ export default function ZiyaretciKartvizitSayfasi() {
                   <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
                 )
               )}
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* Card Info Section - Adjusted spacing for larger logo circle */}
-          <div className="pt-24 px-6 pb-6">
+          {/* Card Info Section - Adjusted spacing for logo circle */}
+          <div className={`px-6 pb-6 ${card.logo_url ? 'pt-24' : 'pt-8'}`}>
             {/* Name and Title */}
             <div className="text-center mb-4">
               <h2 className="text-2xl font-bold mb-1" style={{ color: card.text_color || '#1f2937' }}>

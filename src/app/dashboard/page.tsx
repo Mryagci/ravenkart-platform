@@ -515,11 +515,12 @@ END:VCARD`
                       background: `linear-gradient(135deg, ${businessCard.ribbonPrimaryColor || '#8b5cf6'} 0%, ${businessCard.ribbonSecondaryColor || '#3b82f6'} 100%)`
                     }}
                   >
-                    {/* Circle overlay on ribbon - Shows opposite of background */}
-                    <div 
-                      className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => setShowLogo(!showLogo)}
-                    >
+                    {/* Circle overlay on ribbon - Only show if logo exists */}
+                    {businessCard.logo_url && (
+                      <div 
+                        className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setShowLogo(!showLogo)}
+                      >
                       {!showLogo ? (
                         /* Show logo in circle when profile is in background */
                         businessCard.logo_url ? (
@@ -543,11 +544,12 @@ END:VCARD`
                           <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
                         )
                       )}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Content Section with larger fonts - Adjusted spacing for larger logo circle */}
-                  <div className="pt-24 px-6 pb-6 space-y-4">
+                  {/* Content Section with larger fonts - Adjusted spacing for logo circle */}
+                  <div className={`px-6 pb-6 space-y-4 ${businessCard.logo_url ? 'pt-24' : 'pt-8'}`}>
                     {/* Name, Title, Company */}
                     <div className="text-center space-y-2">
                       <h2 className="text-2xl font-bold" style={{ color: businessCard.textColor || '#1f2937' }}>{businessCard.name}</h2>

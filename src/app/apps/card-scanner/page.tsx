@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Camera, QrCode, Upload, X, CheckCircle, AlertCircle, Scan, Edit3, Save, Crop, MapPin, Calendar, StickyNote } from 'lucide-react'
+import { Camera, QrCode, Upload, X, CheckCircle, AlertCircle, Scan, Edit3, Save, Crop, MapPin, Calendar, StickyNote, CreditCard } from 'lucide-react'
 import Navbar from '@/components/layout/navbar'
 // QrScanner will be dynamically imported to avoid SSR issues
 // Google Cloud Vision API will be used via server-side API route
@@ -291,7 +291,7 @@ export default function CardScannerPage() {
         throw new Error('Veritabanına kaydetme hatası: ' + error.message)
       }
       
-      setScanResult('Kartvizit başarıyla kaydedildi!')
+      setScanResult('Kartvizit başarıyla kaydedildi! Kayıtlı kartvizitlerinizi görmek için Saved Cards sayfasını ziyaret edin.')
       
       // Remove from temporary state after successful save
       setScannedCards(prev => prev.filter(c => c.id !== card.id))
@@ -1298,6 +1298,34 @@ export default function CardScannerPage() {
                     Kartvizit fotoğrafı çekerek bilgileri otomatik olarak çıkarın
                   </p>
                 </motion.button>
+
+                <motion.a
+                  href="/apps/saved-cards"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    padding: '2rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '1rem',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                >
+                  <CreditCard style={{width: '4rem', height: '4rem', color: '#fbbf24', marginBottom: '1rem'}} />
+                  <h3 style={{fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '0.5rem'}}>Kayıtlı Kartvizitler</h3>
+                  <p style={{color: 'rgba(255,255,255,0.7)', lineHeight: '1.4'}}>
+                    Daha önce taradığınız ve kaydettiğiniz kartvizitleri görüntüleyin
+                  </p>
+                </motion.a>
               </motion.div>
             )}
 
@@ -1461,8 +1489,8 @@ export default function CardScannerPage() {
                 animate={{ opacity: 1, y: 0 }}
                 style={{
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
                   gap: '0.75rem',
                   padding: '1rem',
                   background: 'rgba(34,197,94,0.2)',
@@ -1471,8 +1499,34 @@ export default function CardScannerPage() {
                   marginBottom: '2rem'
                 }}
               >
-                <CheckCircle style={{width: '1.5rem', height: '1.5rem', color: '#4ade80'}} />
-                <span style={{color: '#4ade80', fontWeight: '500'}}>{scanResult}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <CheckCircle style={{width: '1.5rem', height: '1.5rem', color: '#4ade80'}} />
+                  <span style={{color: '#4ade80', fontWeight: '500'}}>{scanResult}</span>
+                </div>
+                {scanResult.includes('başarıyla kaydedildi') && (
+                  <motion.a
+                    href="/apps/saved-cards"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(34,197,94,0.3)',
+                      border: '1px solid rgba(34,197,94,0.5)',
+                      borderRadius: '0.5rem',
+                      color: '#4ade80',
+                      textDecoration: 'none',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Kayıtlı Kartvizitleri Görüntüle
+                  </motion.a>
+                )}
               </motion.div>
             )}
 
