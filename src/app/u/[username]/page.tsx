@@ -66,43 +66,38 @@ export default function PublicProfilePage() {
 
       if (error || !data) {
         console.error('Card not found:', error)
-        // Test data for demo
-        if (userId === 'erkinyagci') {
-          const testCard = {
-            id: '92b9eb99-1e27-4fd9-879a-435b5459773c',
-            name: 'Erkin Yağcı',
-            title: 'Software Developer',
-            company: 'RavenKart',
-            phone: '+90 555 123 4567',
-            email: 'erkin@ravenkart.com',
-            website: 'https://ravenkart.com',
-            location: 'İstanbul, Türkiye',
-            iban: 'TR12 3456 7890 1234 5678 90',
-            profilePhotos: ['https://via.placeholder.com/400x400?text=Erkin'],
-            logo_url: 'https://via.placeholder.com/200x200?text=Logo',
-            backgroundColor: '#ffffff',
-            ribbonPrimaryColor: '#8b5cf6',
-            ribbonSecondaryColor: '#3b82f6',
-            textColor: '#1f2937',
-            socialMedia: {
-              linkedin: 'erkinyagci',
-              twitter: 'erkinyagci',
-              showInPublic: true
-            },
-            projects: [],
-            created_at: new Date().toISOString(),
-            user_id: 'test-user'
-          }
-          setBusinessCard(testCard)
-          trackVisit(testCard.id)
-        } else {
-          setBusinessCard(null)
-        }
-      } else {
-        setBusinessCard(data)
-        // Track visit after we have the card data
-        trackVisit(data.id)
+        setBusinessCard(null)
+        setLoading(false)
+        return
       }
+
+      // Convert Supabase format to component format (same as dashboard)
+      const card = data
+      const formattedCard = {
+        id: card.id,
+        name: card.name,
+        title: card.title || '',
+        company: card.company || '',
+        phone: card.phone || '',
+        email: card.email || '',
+        website: card.website || '',
+        location: card.location || '',
+        iban: card.iban || '',
+        profilePhotos: card.profile_photos || [],
+        logo_url: card.logo_url || null,
+        backgroundColor: card.background_color || '#ffffff',
+        ribbonPrimaryColor: card.ribbon_primary_color || '#8b5cf6',
+        ribbonSecondaryColor: card.ribbon_secondary_color || '#3b82f6',
+        textColor: card.text_color || '#1f2937',
+        socialMedia: card.social_media || {},
+        projects: card.projects || [],
+        created_at: card.created_at,
+        user_id: card.user_id
+      }
+
+      setBusinessCard(formattedCard)
+      trackVisit(formattedCard.id)
+      
     } catch (error) {
       console.error('Error loading business card:', error)
       setBusinessCard(null)
@@ -282,7 +277,8 @@ END:VCARD`
           >
             {/* Logo/Profile Photo Container with Animation */}
             <div 
-              className="w-full aspect-square relative group"
+              className="w-full aspect-square relative group cursor-pointer"
+              onClick={() => setShowLogo(!showLogo)}
               onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
               onTouchEnd={(e) => {
                 const touchEndX = e.changedTouches[0].clientX
@@ -297,49 +293,38 @@ END:VCARD`
               {showLogo ? (
                 /* Logo in background when showLogo=true */
                 businessCard.logo_url ? (
-                  <div className="w-full h-full bg-white flex items-center justify-center p-8">
+                  <div className="w-full h-full bg-white flex items-center justify-center p-8 cursor-pointer">
                     <img 
                       src={businessCard.logo_url} 
                       alt="Company Logo" 
-                      className="max-w-full max-h-full object-contain"
+                      className="max-w-full max-h-full object-contain cursor-pointer"
                     />
                   </div>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center cursor-pointer">
                     <div className="w-32 h-32 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full"></div>
                   </div>
                 )
               ) : (
                 /* Profile photo in background when showLogo=false */
-                businessCard.profilePhotos && businessCard.profilePhotos.length > 0 ? (
+                (businessCard.profilePhotos && businessCard.profilePhotos.length > 0) || !businessCard.profilePhotos ? (
                   <>
                     <img 
-                      src={businessCard.profilePhotos[currentPhotoIndex]} 
+                      src={businessCard.profilePhotos?.[currentPhotoIndex] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face'} 
                       alt="Profile" 
                       className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => {
-                        if (businessCard.profilePhotos && businessCard.profilePhotos.length > 1) {
-                          setCurrentPhotoIndex((prev) => 
-                            prev === businessCard.profilePhotos!.length - 1 ? 0 : prev + 1
-                          );
-                        }
-                      }}
                     />
                     
                     {/* Navigation Dots - only show when profile is in background */}
-                    {businessCard.profilePhotos.length > 1 && (
+                    {businessCard.profilePhotos && businessCard.profilePhotos.length > 1 && (
                       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         {businessCard.profilePhotos.map((_, index) => (
-                          <button
+                          <div
                             key={index}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCurrentPhotoIndex(index);
-                            }}
                             className={`w-2 h-2 rounded-full transition-all ${
                               index === currentPhotoIndex 
                                 ? 'bg-white scale-125' 
-                                : 'bg-white/60 hover:bg-white/80'
+                                : 'bg-white/60'
                             }`}
                           />
                         ))}
@@ -347,7 +332,7 @@ END:VCARD`
                     )}
                     
                     {/* Photo Counter - only show when profile is in background */}
-                    {businessCard.profilePhotos.length > 1 && (
+                    {businessCard.profilePhotos && businessCard.profilePhotos.length > 1 && (
                       <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                         {currentPhotoIndex + 1}/{businessCard.profilePhotos.length}
                       </div>
