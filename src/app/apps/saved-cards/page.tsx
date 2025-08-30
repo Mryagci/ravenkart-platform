@@ -312,14 +312,59 @@ ${card.email || ''}${card.phone ? ` â€¢ ${card.phone}` : ''}${card.website ? ` â
 
   return (
     <div 
+      className="min-h-screen"
       style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'linear-gradient(135deg, #111827 0%, #7c3aed 25%, #ec4899 50%, #3730a3 75%, #111827 100%)'
       }}
     >
       <Navbar />
       
-      <div style={{ padding: '6rem 1rem 2rem' }}>
+      {/* Floating animated elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-32 h-32 bg-teal-400/20 rounded-full blur-3xl"
+          animate={{
+            y: [0, -30, 15, 0],
+            x: [0, 20, -10, 0],
+            opacity: [0.3, 0.8, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 7,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div
+          className="absolute top-3/4 right-1/4 w-48 h-48 bg-violet-700/20 rounded-full blur-xl"
+          animate={{
+            y: [0, 25, -15, 0],
+            x: [0, -20, 30, 0],
+            opacity: [0.2, 0.6, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1.5
+          }}
+        />
+        <motion.div
+          className="absolute top-1/2 left-3/4 w-24 h-24 bg-pink-500/20 rounded-full blur-2xl"
+          animate={{
+            y: [0, 20, -10, 0],
+            x: [0, -15, 25, 0],
+            opacity: [0.2, 0.7, 0.3, 0.2],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5
+          }}
+        />
+      </div>
+      
+      <div style={{ padding: '6rem 1rem 2rem', position: 'relative', zIndex: 10 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           {/* Header */}
           <motion.div
