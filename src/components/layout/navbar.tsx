@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, usePathname } from 'next/navigation'
-import { QrCode, Users, Menu, X, LogOut, Home, User, DollarSign, ChevronDown, Settings, CreditCard, HelpCircle, Grid, ScanLine, Folder, PenTool, Calendar, Phone } from 'lucide-react'
+import { QrCode, Users, Menu, X, LogOut, Home, User, DollarSign, ChevronDown, Settings, CreditCard, HelpCircle, Grid, ScanLine, Folder, PenTool, Calendar, Phone, BarChart3 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import {
   DropdownMenu,
@@ -97,15 +97,27 @@ const Navbar = () => {
             </button>
             
             {user && (
-              <button
-                onClick={() => router.push('/dashboard')}
-                className={`flex items-center gap-2 transition-colors duration-300 ${
-                  isActive('/dashboard') ? 'text-white font-semibold' : pathname === '/' ? 'text-white hover:text-white' : 'text-white/80 hover:text-white'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                Kartvizitim
-              </button>
+              <>
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className={`flex items-center gap-2 transition-colors duration-300 ${
+                    isActive('/dashboard') ? 'text-white font-semibold' : pathname === '/' ? 'text-white hover:text-white' : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  Kartvizitim
+                </button>
+                
+                <button
+                  onClick={() => router.push('/analytics')}
+                  className={`flex items-center gap-2 transition-colors duration-300 ${
+                    isActive('/analytics') ? 'text-white font-semibold' : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Analitik
+                </button>
+              </>
             )}
             
             <button
@@ -228,6 +240,14 @@ const Navbar = () => {
                     </DropdownMenuItem>
 
                     <DropdownMenuItem 
+                      onClick={() => router.push('/analytics')}
+                      className="flex items-center gap-3 p-2 hover:bg-white/10 focus:bg-white/10"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span className="text-sm">Analitik</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
                       onClick={() => router.push('/account/settings')}
                       className="flex items-center gap-3 p-2 hover:bg-white/10 focus:bg-white/10"
                     >
@@ -315,18 +335,33 @@ const Navbar = () => {
               </button>
               
               {user && (
-                <button
-                  onClick={() => {
-                    router.push('/dashboard');
-                    setIsMenuOpen(false);
-                  }}
-                  className={`flex items-center gap-2 text-left transition-colors duration-300 py-2 ${
-                    isActive('/dashboard') ? 'text-white font-semibold' : pathname === '/' ? 'text-white hover:text-white' : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                  Kartvizitim
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      router.push('/dashboard');
+                      setIsMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-2 text-left transition-colors duration-300 py-2 ${
+                      isActive('/dashboard') ? 'text-white font-semibold' : pathname === '/' ? 'text-white hover:text-white' : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    Kartvizitim
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      router.push('/analytics');
+                      setIsMenuOpen(false);
+                    }}
+                    className={`flex items-center gap-2 text-left transition-colors duration-300 py-2 ${
+                      isActive('/analytics') ? 'text-white font-semibold' : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Analitik
+                  </button>
+                </>
               )}
               
               <button

@@ -1536,7 +1536,7 @@ export default function CreateCard() {
 
               <div className="sticky top-20">
                 {/* Desktop Preview */}
-                <div className="hidden md:block">
+                <div className="block">
                   <motion.div
                     className="glass-card p-6"
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -1555,15 +1555,19 @@ export default function CreateCard() {
                         }}
                       >
                         {/* Background Image - Profile Photo or Logo based on showLogo state */}
-                        <div className="w-full aspect-square relative group">
+                        <div 
+                          className="w-full aspect-square relative group cursor-pointer"
+                          onClick={() => setShowLogo(!showLogo)}
+                        >
                           {showLogo && cardData.companyLogo ? (
                             /* Show logo in background when logo mode is active */
-                            <img 
-                              src={cardData.companyLogo} 
-                              alt="Company Logo" 
-                              className="w-full h-full object-contain bg-gradient-to-br from-white via-gray-50 to-gray-100 cursor-pointer"
-                              onClick={() => setShowLogo(!showLogo)}
-                            />
+                            <div className="w-full h-full bg-white flex items-center justify-center p-8">
+                              <img 
+                                src={cardData.companyLogo} 
+                                alt="Company Logo" 
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            </div>
                           ) : (
                             /* Show profile photo in background (default) */
                             cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
@@ -1571,42 +1575,31 @@ export default function CreateCard() {
                                 <img 
                                   src={cardData.profilePhotos[currentPhotoIndex]} 
                                   alt="Profile" 
-                                  className="w-full h-full object-cover cursor-pointer"
-                                  onClick={() => {
-                                    if (cardData.profilePhotos && cardData.profilePhotos.length > 1) {
-                                      setCurrentPhotoIndex((prev) => 
-                                        prev === cardData.profilePhotos!.length - 1 ? 0 : prev + 1
-                                      );
-                                    }
-                                  }}
+                                  className="w-full h-full object-cover"
                                 />
-                              
-                              {/* Navigation Dots */}
-                              {cardData.profilePhotos.length > 1 && (
-                                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  {cardData.profilePhotos.map((_, index) => (
-                                    <button
-                                      key={index}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentPhotoIndex(index);
-                                      }}
-                                      className={`w-2 h-2 rounded-full transition-all ${
-                                        index === currentPhotoIndex 
-                                          ? 'bg-white scale-125' 
-                                          : 'bg-white/60 hover:bg-white/80'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                              
-                              {/* Photo Counter */}
-                              {cardData.profilePhotos.length > 1 && (
-                                <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                  {currentPhotoIndex + 1}/{cardData.profilePhotos.length}
-                                </div>
-                              )}
+                                
+                                {/* Navigation Dots - only show when profile is in background */}
+                                {cardData.profilePhotos.length > 1 && (
+                                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {cardData.profilePhotos.map((_, index) => (
+                                      <div
+                                        key={index}
+                                        className={`w-2 h-2 rounded-full transition-all ${
+                                          index === currentPhotoIndex 
+                                            ? 'bg-white scale-125' 
+                                            : 'bg-white/60'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {/* Photo Counter - only show when profile is in background */}
+                                {cardData.profilePhotos.length > 1 && (
+                                  <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {currentPhotoIndex + 1}/{cardData.profilePhotos.length}
+                                  </div>
+                                )}
                               </>
                             ) : (
                               <div className="w-full h-full bg-white/20 flex items-center justify-center">
@@ -1616,7 +1609,7 @@ export default function CreateCard() {
                           )}
                         </div>
 
-                        {/* 30px Ribbon with Gradient and Logo Circle */}
+                        {/* 30px Ribbon with Gradient */}
                         <div 
                           className="h-8 border-t border-white/20 relative"
                           style={{
@@ -1626,20 +1619,16 @@ export default function CreateCard() {
                           {/* Circle overlay on ribbon - Only show if logo exists */}
                           {cardData.companyLogo && (
                             <div 
-                              className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                              className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-white rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden z-10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
                               onClick={() => setShowLogo(!showLogo)}
                             >
                               {!showLogo ? (
                                 /* Show logo in circle when profile is in background */
-                                cardData.companyLogo ? (
-                                  <img 
-                                    src={cardData.companyLogo} 
-                                    alt="Company Logo" 
-                                    className="w-32 h-32 object-contain"
-                                  />
-                                ) : (
-                                  <Building className="w-20 h-20 text-gray-400" />
-                                )
+                                <img 
+                                  src={cardData.companyLogo} 
+                                  alt="Company Logo" 
+                                  className="w-16 h-16 object-contain"
+                                />
                               ) : (
                                 /* Show profile in circle when logo is in background */
                                 cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
@@ -1649,20 +1638,26 @@ export default function CreateCard() {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
+                                  <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full"></div>
                                 )
                               )}
                             </div>
                           )}
                         </div>
 
-                        {/* Content Section with larger fonts - Adjusted spacing for logo circle */}
-                        <div className={`px-6 pb-6 space-y-4 ${cardData.companyLogo ? 'pt-24' : 'pt-6'}`}>
+                        {/* Content Section with larger fonts */}
+                        <div className={`px-6 pb-6 space-y-4 ${cardData.companyLogo ? 'pt-16' : 'pt-6'}`}>
                           {/* Name, Title, Company */}
                           <div className="text-center space-y-2">
-                            <h2 className="text-2xl font-bold" style={{ color: cardData.textColor || '#1f2937' }}>{cardData.name || 'Ad Soyad'}</h2>
-                            <p className="font-medium text-lg opacity-90" style={{ color: cardData.textColor || '#1f2937' }}>{cardData.title || 'Ünvan'}</p>
-                            <p className="text-base opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>{cardData.company || 'Şirket'}</p>
+                            <h2 className="text-2xl font-bold" style={{ color: cardData.textColor || '#1f2937' }}>
+                              {cardData.name || 'Ad Soyad'}
+                            </h2>
+                            <p className="font-medium text-lg opacity-90" style={{ color: cardData.textColor || '#1f2937' }}>
+                              {cardData.title || 'Ünvan'}
+                            </p>
+                            <p className="text-base opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>
+                              {cardData.company || 'Şirket'}
+                            </p>
                           </div>
 
                           {/* Contact Info */}
@@ -1700,75 +1695,75 @@ export default function CreateCard() {
                           </div>
 
                           {/* Social Media Icons - Only show if showInPublic is true */}
-                          {cardData.socialMedia?.showInPublic === true && (
+                          {cardData.socialMedia?.showInPublic === true && hasAnySocialMedia(cardData.socialMedia) && (
                             <div className="flex justify-center gap-3 py-4 flex-wrap">
-                            {cardData.socialMedia?.linkedin && cardData.socialMedia?.showLinkedin !== false && (
-                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Linkedin className="w-5 h-5 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.twitter && cardData.socialMedia?.showTwitter !== false && (
-                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Twitter className="w-5 h-5 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.instagram && cardData.socialMedia?.showInstagram !== false && (
-                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Instagram className="w-5 h-5 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.youtube && cardData.socialMedia?.showYoutube !== false && (
-                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Youtube className="w-5 h-5 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.facebook && cardData.socialMedia?.showFacebook !== false && (
-                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Facebook className="w-5 h-5 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.whatsapp && cardData.socialMedia?.showWhatsapp !== false && (
-                              <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <MessageCircle className="w-5 h-5 text-white" />
-                              </div>
-                            )}
+                              {cardData.socialMedia?.linkedin && cardData.socialMedia?.showLinkedin !== false && (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                                  }}
+                                >
+                                  <Linkedin className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              {cardData.socialMedia?.twitter && cardData.socialMedia?.showTwitter !== false && (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                                  }}
+                                >
+                                  <Twitter className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              {cardData.socialMedia?.instagram && cardData.socialMedia?.showInstagram !== false && (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                                  }}
+                                >
+                                  <Instagram className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              {cardData.socialMedia?.youtube && cardData.socialMedia?.showYoutube !== false && (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                                  }}
+                                >
+                                  <Youtube className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              {cardData.socialMedia?.facebook && cardData.socialMedia?.showFacebook !== false && (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                                  }}
+                                >
+                                  <Facebook className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              {cardData.socialMedia?.whatsapp && cardData.socialMedia?.showWhatsapp !== false && (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
+                                  }}
+                                >
+                                  <MessageCircle className="w-3 h-3 text-white" />
+                                </div>
+                              )}
                             </div>
                           )}
 
                           {/* QR Code Section */}
                           <div className="flex justify-center pt-4">
                             <div 
-                              className="w-24 h-24 rounded-2xl flex items-center justify-center shadow-lg border overflow-hidden"
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg border overflow-hidden"
                               style={{
                                 backgroundColor: cardData.backgroundColor === '#ffffff' ? '#f8f9fa' : '#ffffff',
                                 borderColor: cardData.textColor ? `${cardData.textColor}20` : '#e5e7eb'
@@ -1781,7 +1776,7 @@ export default function CreateCard() {
                                   className="w-full h-full object-contain p-1"
                                 />
                               ) : (
-                                <QrCode className="w-16 h-16" style={{ color: cardData.textColor || '#1f2937' }} />
+                                <QrCode className="w-8 h-8" style={{ color: cardData.textColor || '#1f2937' }} />
                               )}
                             </div>
                           </div>
@@ -1789,28 +1784,6 @@ export default function CreateCard() {
                           <p className="text-center opacity-60 text-xs mt-2" style={{ color: cardData.textColor || '#1f2937' }}>
                             QR kodu tarayarak kartviziti görüntüleyin
                           </p>
-
-                          {/* Projects/Products Section */}
-                          {cardData.projects && cardData.projects.length > 0 && (
-                            <div className="pt-6" style={{ borderTop: `1px solid ${cardData.textColor}20` }}>
-                              <h3 className="font-semibold mb-3 text-center" style={{ color: cardData.textColor || '#1f2937' }}>Projeler & Ürünler</h3>
-                              <div className="space-y-3">
-                                {cardData.projects.map((project) => (
-                                  <div 
-                                    key={project.id} 
-                                    className="rounded-lg p-3"
-                                    style={{ 
-                                      backgroundColor: `${cardData.textColor || '#1f2937'}10`,
-                                      border: `1px solid ${cardData.textColor || '#1f2937'}20`
-                                    }}
-                                  >
-                                    <h4 className="font-medium text-sm" style={{ color: cardData.textColor || '#1f2937' }}>{project.title}</h4>
-                                    <p className="text-xs mt-1 opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>{project.description}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
 
                         {/* Powered by RAVENKART */}
@@ -1821,198 +1794,15 @@ export default function CreateCard() {
                             borderTop: `1px solid ${cardData.textColor || '#1f2937'}20`
                           }}
                         >
-                          <span className="text-xs opacity-60" style={{ color: cardData.textColor || '#1f2937' }}>Powered by RAVENKART</span>
+                          <span className="text-xs opacity-60" style={{ color: cardData.textColor || '#1f2937' }}>
+                            Powered by RAVENKART
+                          </span>
                         </div>
                       </motion.div>
                     </div>
-
-                    <p className="text-center text-white/60 text-sm mt-4">
-                      Desktop Önizleme - Form doldurdukça güncellenecek
-                    </p>
-                  </motion.div>
-                </div>
-
-                {/* Mobile Preview */}
-                <div className="md:hidden">
-                  <motion.div
-                    className="glass-card p-4"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {/* Compact Mobile Card */}
-                    <div 
-                      className="rounded-2xl shadow-xl overflow-hidden mx-auto max-w-xs"
-                      style={{
-                        backgroundColor: cardData.backgroundColor || '#ffffff'
-                      }}
-                    >
-                      
-                      {/* Header with photo and QR - Gradient Background */}
-                      <div 
-                        className="p-4 flex items-center justify-between"
-                        style={{
-                          background: `linear-gradient(45deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                        }}
-                      >
-                        <div className="w-16 h-16 relative group">
-                          {cardData.profilePhotos && cardData.profilePhotos.length > 0 ? (
-                            <>
-                              <img 
-                                src={cardData.profilePhotos[currentPhotoIndex]} 
-                                alt="Profile" 
-                                className="w-full h-full rounded-full object-cover border-2 border-white cursor-pointer"
-                                onClick={() => {
-                                  if (cardData.profilePhotos && cardData.profilePhotos.length > 1) {
-                                    setCurrentPhotoIndex((prev) => 
-                                      prev === cardData.profilePhotos!.length - 1 ? 0 : prev + 1
-                                    );
-                                  }
-                                }}
-                              />
-                              {/* Photo indicator for mobile */}
-                              {cardData.profilePhotos.length > 1 && (
-                                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-white text-xs">
-                                  {currentPhotoIndex + 1}/{cardData.profilePhotos.length}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="w-full h-full bg-white/20 rounded-full border-2 border-white/30 flex items-center justify-center">
-                              <User className="w-8 h-8 text-white/60" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center overflow-hidden">
-                          {qrCodeUrl ? (
-                            <img 
-                              src={qrCodeUrl} 
-                              alt="QR Code" 
-                              className="w-full h-full object-contain p-1"
-                            />
-                          ) : (
-                            <QrCode className="w-8 h-8" style={{ color: cardData.textColor || '#1f2937' }} />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Info Section */}
-                      <div className="px-4 pb-4 text-center">
-                        <h3 className="text-lg font-bold mb-1" style={{ color: cardData.textColor || '#1f2937' }}>
-                          {cardData.name || 'Ad Soyad'}
-                        </h3>
-                        <p className="font-medium text-sm mb-1 opacity-90" style={{ color: cardData.textColor || '#1f2937' }}>
-                          {cardData.title || 'Ünvan'}
-                        </p>
-                        <p className="text-xs mb-3 opacity-80" style={{ color: cardData.textColor || '#1f2937' }}>
-                          {cardData.company || 'Şirket'}
-                        </p>
-
-                        {/* Contact & Social Media */}
-                        <div className="space-y-2">
-                          {/* Quick Contact Row */}
-                          <div className="flex justify-center gap-2">
-                            {cardData.phone && (
-                              <div 
-                                className="w-7 h-7 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Phone className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.email && (
-                              <div 
-                                className="w-7 h-7 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Mail className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.website && (
-                              <div 
-                                className="w-7 h-7 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Globe className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Social Media Row */}
-                          <div className="flex justify-center gap-1.5 flex-wrap">
-                            {cardData.socialMedia?.linkedin && (
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Linkedin className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.twitter && (
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Twitter className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.instagram && (
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Instagram className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.youtube && (
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Youtube className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.facebook && (
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <Facebook className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                            {cardData.socialMedia?.whatsapp && (
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center"
-                                style={{
-                                  background: `linear-gradient(135deg, ${cardData.ribbonPrimaryColor || '#8b5cf6'} 0%, ${cardData.ribbonSecondaryColor || '#3b82f6'} 100%)`
-                                }}
-                              >
-                                <MessageCircle className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                     
-                    <p className="text-center text-white/60 text-sm mt-3">
-                      Mobil Önizleme
+                    <p className="text-center text-white/60 text-sm mt-4">
+                      Ön İzleme - Form doldurdukça güncellenecek
                     </p>
                   </motion.div>
                 </div>

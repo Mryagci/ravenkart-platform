@@ -378,7 +378,7 @@ END:VCARD`
                       <span>Kart Tarayıcı</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => router.push('/dashboard/analytics')}
+                      onClick={() => router.push('/analytics')}
                       className="text-white hover:bg-white/20 focus:bg-white/20"
                     >
                       <BarChart3 className="mr-2 h-4 w-4" />
@@ -768,6 +768,20 @@ END:VCARD`
                   <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
                   <Download className="w-5 h-5 relative z-10" />
                   <span className="relative z-10">Resim Olarak Kaydet</span>
+                </motion.button>
+
+                {/* Detaylı Analitik Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/analytics')}
+                  className="w-full py-4 bg-gradient-to-r from-violet-500 to-cyan-600 text-white font-semibold rounded-2xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden"
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-violet-500 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                  <BarChart3 className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Detaylı Analitik</span>
                 </motion.button>
               </div>
 

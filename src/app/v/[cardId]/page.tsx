@@ -134,19 +134,27 @@ export default function VisitorCardPage() {
           logging: false,
         })
         
-        // Convert to blob and download
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `kartvizit-${card.name.replace(/\s+/g, '-').toLowerCase()}.png`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            URL.revokeObjectURL(url)
-          }
-        })
+        // Mobil cihaz kontrolü
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        
+        if (isMobile) {
+          // Mobil cihazlarda galeriye kaydet
+          await saveToMobileGallery(canvas, card.name)
+        } else {
+          // Desktop'ta normal download
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `kartvizit-${card.name.replace(/\s+/g, '-').toLowerCase()}.png`
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              URL.revokeObjectURL(url)
+            }
+          })
+        }
       }
     } catch (error) {
       console.error('Screenshot alınamadı:', error)
@@ -154,6 +162,70 @@ export default function VisitorCardPage() {
     }
   }
 
+  const saveToMobileGallery = async (canvas: HTMLCanvasElement, cardName: string) => {
+    try {
+      // Canvas'ı blob'a çevir
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+        }, 'image/png', 1.0)
+      })
+      
+      if (!blob) {
+        throw new Error('Canvas blob oluşturulamadı')
+      }
+
+      const fileName = `${cardName.replace(/\s+/g, '-').toLowerCase()}-kartvizit.png`
+
+      // Modern tarayıcılarda Web Share API kullan
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: 'image/png' })
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'Kartvizit',
+            text: `${cardName} kartviziti`,
+            files: [file]
+          })
+          alert('Kartvizit paylaşıldı!')
+          return
+        }
+      }
+
+      // iOS Safari için özel işlem
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      if (isIOS) {
+        // iOS'ta clipboard API kullan
+        if (navigator.clipboard && 'write' in navigator.clipboard) {
+          const clipboardItem = new ClipboardItem({ 'image/png': blob })
+          await navigator.clipboard.write([clipboardItem])
+          alert('Kartvizit panoya kopyalandı! Fotoğraflar uygulamasına yapıştırabilirsiniz.')
+          return
+        }
+      }
+
+      // Android ve diğer mobil cihazlar için fallback
+      const dataUrl = canvas.toDataURL('image/png', 1.0)
+      const link = document.createElement('a')
+      link.download = fileName
+      link.href = dataUrl
+      
+      // Android'de download attribute desteklenmiyorsa
+      if (typeof link.download === 'undefined') {
+        // Yeni tab'da aç, kullanıcı manuel kaydetsin
+        window.open(dataUrl, '_blank')
+        alert('Açılan sekmede resme uzun basıp "Resmi Kaydet" seçin')
+      } else {
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        alert('Kartvizit indirildi!')
+      }
+    } catch (error) {
+      console.error('Mobil galeri kaydetme hatası:', error)
+      alert('Görüntü galeriye kaydedilemedi')
+    }
+  }
 
   if (loading) {
     return (
