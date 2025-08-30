@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Shield, Cookie, Lock } from 'lucide-react'
+import { X, Cookie, ChevronUp, Shield } from 'lucide-react'
 
 export default function KVKKConsent() {
   const [showConsent, setShowConsent] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export default function KVKKConsent() {
       setTimeout(() => {
         setShowConsent(true)
         setIsLoading(false)
-      }, 1000)
+      }, 2000)
     } else {
       setIsLoading(false)
     }
@@ -32,7 +33,6 @@ export default function KVKKConsent() {
     localStorage.setItem('kvkk-consent', 'false')
     localStorage.setItem('kvkk-consent-date', new Date().toISOString())
     setShowConsent(false)
-    // Optionally redirect to another page or show limited functionality
   }
 
   if (isLoading || !showConsent) return null
@@ -40,117 +40,142 @@ export default function KVKKConsent() {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6"
       >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.8, opacity: 0, y: 20 }}
-          className="relative max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <Shield className="w-6 h-6 text-white" />
-              <h2 className="text-xl font-bold text-white">Gizlilik ve Çerezler</h2>
-            </div>
-          </div>
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-black/20 to-black/10 backdrop-blur-sm">
+              {/* Compact View */}
+              <div className="px-6 py-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-4 flex-1">
+                    <div className="p-3 bg-gradient-to-br from-violet-500/20 to-purple-600/20 rounded-2xl backdrop-blur-sm border border-white/20">
+                      <Cookie className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-white font-semibold text-base md:text-lg mb-1">
+                        Gizlilik ve Çerez Politikası
+                      </h3>
+                      <p className="text-white/70 text-sm leading-relaxed">
+                        Deneyiminizi geliştirmek için çerezler ve KVKK kapsamında kişisel veriler kullanırız.{' '}
+                        <button
+                          onClick={() => setIsExpanded(!isExpanded)}
+                          className="text-white/90 hover:text-white underline decoration-white/40 hover:decoration-white transition-colors inline-flex items-center gap-1 font-medium"
+                        >
+                          Detayları görüntüle
+                          <ChevronUp 
+                            className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+                          />
+                        </button>
+                      </p>
+                    </div>
+                  </div>
 
-          {/* Content */}
-          <div className="p-6">
-            <div className="space-y-4 text-gray-700 text-sm leading-relaxed">
-              <p className="font-semibold text-gray-800">
-                Kişisel Verilerin Korunması Kanunu (KVKK) Bilgilendirmesi
-              </p>
-              
-              <p>
-                Ravenkart olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında 
-                kişisel verilerinizi işlediğimizi bildiririz.
-              </p>
-
-              <div className="bg-blue-50 rounded-lg p-4 space-y-2 mb-3">
-                <p className="font-semibold text-blue-800 text-sm">İşlenen Kişisel Veriler:</p>
-                <ul className="text-xs text-blue-700 list-disc list-inside space-y-1">
-                  <li>Ad, soyad, e-posta, telefon numarası</li>
-                  <li>Kartvizit bilgileri ve görselleri</li>
-                  <li>IP adresi, tarayıcı bilgileri</li>
-                  <li>Site kullanım verileri ve analitikler</li>
-                </ul>
-                
-                <p className="font-semibold text-blue-800 text-sm mt-3">İşleme Amaçları:</p>
-                <ul className="text-xs text-blue-700 list-disc list-inside space-y-1">
-                  <li>Dijital kartvizit hizmeti sunma</li>
-                  <li>Kullanıcı deneyimi iyileştirme</li>
-                  <li>Güvenlik ve teknik destek</li>
-                  <li>Yasal yükümlülüklerin yerine getirilmesi</li>
-                </ul>
-              </div>
-
-              <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <Cookie className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-blue-800">Çerezler</p>
-                    <p className="text-sm">
-                      Daha iyi hizmet verebilmek için çerezler kullanıyoruz. 
-                      Site deneyiminizi iyileştirmek ve analitik veriler toplamak amacıyla.
-                    </p>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <button
+                      onClick={handleDecline}
+                      className="px-5 py-2.5 text-sm font-medium text-white/80 bg-white/10 hover:bg-white/20 border border-white/30 rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm"
+                    >
+                      Reddet
+                    </button>
+                    <button
+                      onClick={handleAccept}
+                      className="px-6 py-2.5 text-sm font-semibold bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-500 hover:via-purple-500 hover:to-pink-500 text-white rounded-xl transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                      Kabul Ediyorum
+                    </button>
                   </div>
                 </div>
-                
-                <div className="flex items-start gap-3">
-                  <Lock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-blue-800">Veri Güvenliği</p>
-                    <p className="text-sm">
-                      Kişisel verileriniz güvenli sunucularda saklanır ve 
-                      üçüncü kişilerle paylaşılmaz.
-                    </p>
-                  </div>
-                </div>
+
+                {/* Expanded Details */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-6 border-t border-white/20 mt-5">
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 bg-gradient-to-br from-blue-500/20 to-cyan-600/20 rounded-xl">
+                                <Shield className="w-4 h-4 text-white" />
+                              </div>
+                              <h4 className="font-semibold text-white">KVKK Bilgilendirmesi</h4>
+                            </div>
+                            <div className="space-y-3 text-sm text-white/80">
+                              <p>
+                                6698 sayılı KVKK kapsamında işlenen verileriniz:
+                              </p>
+                              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                <ul className="space-y-2 text-xs">
+                                  <li className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full"></div>
+                                    İsim, e-posta, telefon bilgileri
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                                    Kartvizit görselleri ve içerikleri
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                                    IP adresi ve tarayıcı verileri
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                                    Site kullanım analitikleri
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-xl">
+                                <Shield className="w-4 h-4 text-white" />
+                              </div>
+                              <h4 className="font-semibold text-white">Haklarınız</h4>
+                            </div>
+                            <div className="space-y-3 text-sm text-white/80">
+                              <p>
+                                KVKK kapsamında sahip olduğunuz haklar:
+                              </p>
+                              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                <p className="text-xs leading-relaxed mb-3">
+                                  Verilerinize erişim, düzeltme, silme, işlemeye itiraz etme, 
+                                  veri taşınabilirliği ve şikayette bulunma haklarınız mevcuttur.
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  <a 
+                                    href="/privacy" 
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-xs rounded-lg transition-colors border border-white/20"
+                                  >
+                                    Gizlilik Politikası
+                                  </a>
+                                  <a 
+                                    href="mailto:info@ravenkart.com" 
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-xs rounded-lg transition-colors border border-white/20"
+                                  >
+                                    İletişim
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-
-              <div className="bg-green-50 rounded-lg p-3 mb-3">
-                <p className="font-semibold text-green-800 text-sm">KVKK Haklarınız:</p>
-                <p className="text-xs text-green-700 mt-1">
-                  Bilgi talep etme, düzeltme, silme, işleme itiraz etme, 
-                  veri taşınabilirliği ve şikayette bulunma haklarınız bulunmaktadır.
-                </p>
-              </div>
-
-              <p className="text-xs text-gray-600">
-                Detaylı bilgi için{' '}
-                <a href="/privacy" className="text-blue-600 hover:underline">
-                  Gizlilik Politikamızı
-                </a>{' '}
-                inceleyebilir, sorularınız için{' '}
-                <a href="mailto:info@ravenkart.com" className="text-blue-600 hover:underline">
-                  info@ravenkart.com
-                </a>{' '}
-                adresinden iletişime geçebilirsiniz.
-              </p>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleDecline}
-                className="flex-1 px-4 py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-              >
-                Reddet
-              </button>
-              <button
-                onClick={handleAccept}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:opacity-90 transition-opacity font-medium shadow-lg"
-              >
-                Kabul Ediyorum
-              </button>
             </div>
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   )
